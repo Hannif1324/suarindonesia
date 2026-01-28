@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SuaR Indonesia - Lembaga Sosial untuk Pemberdayaan Masyarakat">
+    <title>SuaR Indonesia</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Open+Sans:wght@400;600&family=Poppins:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Custom Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Poppins', 'sans-serif'],
+                        body: ['Open Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            DEFAULT: '#673de6',
+                            dark: '#5025d1',
+                            light: '#ebe4ff',
+                        },
+                        meteorite: {
+                            DEFAULT: '#8c85ff',
+                            dark: '#2f1c6a',
+                            light: '#d5dfff',
+                        },
+                        danger: {
+                            DEFAULT: '#fc5185',
+                            dark: '#d63163',
+                            light: '#ffe8ef',
+                        },
+                        warning: {
+                            DEFAULT: '#ffcd35',
+                            dark: '#fea419',
+                            light: '#fff8e2',
+                        },
+                        success: {
+                            DEFAULT: '#00b090',
+                            dark: '#008361',
+                            light: '#def4f0',
+                        },
+                        dark: '#1d1e20',
+                        gray: {
+                            DEFAULT: '#727586',
+                            dark: '#36344d',
+                            light: '#f2f3f6',
+                            border: '#dadce0',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/css/custom.css">
+</head>
+
+<body class="bg-gray-light font-sans text-dark antialiased">
+    <!-- App Root -->
+    <div id="app">
+        <!-- Loading State -->
+        <div id="loading" class="flex items-center justify-center min-h-screen bg-white">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mx-auto"></div>
+                <p class="mt-4 text-gray font-medium">Memuat...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reload Data Helper (for development) -->
+    <script type="module" src="/js/reload-data.js"></script>
+
+    <!-- JavaScript Modules -->
+    <script type="module" src="/js/main.js"></script>
+</body>
+
+</html>

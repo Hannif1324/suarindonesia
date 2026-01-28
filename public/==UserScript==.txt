@@ -1,0 +1,455 @@
+// ==UserScript==
+// @name         Google Forms Gemini Solver3 (Kontrol Manual, Pilihan, Alasan & Gambar v2.3.1 - CSP Emoji Fix)
+// @namespace    http://tampermonkey.net/
+// @version      0.3.9.6_manual_csp_emoji_fix
+// @description  Saran jawaban & alasan dari Gemini API per soal (termasuk gambar), kontrol pengguna, prompt tegas. Perbaikan CSP emoji, Toggle UI, Auto-hide.
+// @author       Anda (dengan modifikasi & perbaikan dari AI)
+// @match        https://docs.google.com/forms/d/e/*
+// @match        https://docs.google.com/forms/u/*/d/e/*
+// @grant        GM_xmlhttpRequest
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @connect      generativelanguage.googleapis.com
+// @run-at       document-idle
+// ==/UserScript==
+
+(async function() {
+    'use strict';
+    console.log("Google Forms Gemini Solver v0.3.9.1 (CSP Emoji Fix) - Script Injected");
+
+    const GEMINI_API_KEY_STORAGE = 'gemini_api_key_v0.3.9.1_csp_emoji'; // Sedikit update nama key
+    let geminiApiKey = '';
+    let currentQuestionIndex = 0;
+    let allQuestionsData = [];
+    let uiContainer = null;
+    let solverToggleBubble = null;
+
+    // 1. Fungsi getApiKey
+    async function getApiKey() {
+        console.log("Attempting to get API Key...");
+        let apiKey = await GM_getValue(GEMINI_API_KEY_STORAGE);
+        if (!apiKey) {
+            console.log("API Key not found, prompting user.");
+            apiKey = prompt('Masukkan Gemini API Key Anda (dari Google AI Studio):');
+            if (apiKey && apiKey.trim() !== "") {
+                await GM_setValue(GEMINI_API_KEY_STORAGE, apiKey);
+                console.log("API Key saved.");
+            } else {
+                alert('API Key tidak dimasukkan. Skrip tidak dapat berjalan.');
+                console.error('API Key not provided.');
+                return null;
+            }
+        } else {
+            console.log("API Key retrieved.");
+        }
+        geminiApiKey = apiKey;
+        return apiKey;
+    }
+
+    // 2. Helper function to get image as base64
+    async function getImageAsBase64(imageUrl) {
+        if (!imageUrl) return null;
+        if (imageUrl.startsWith('data:image')) {
+            return {
+                mimeType: imageUrl.substring(imageUrl.indexOf(':') + 1, imageUrl.indexOf(';')),
+                data: imageUrl.substring(imageUrl.indexOf(',') + 1)
+            };
+        }
+        return new Promise((resolve, reject) => {
+            GM_xmlhttpRequest({
+                method: "GET", url: imageUrl, responseType: "blob",
+                onload: function(response) {
+                    if (response.status === 200) {
+                        const blob = response.response;
+                        const reader = new FileReader();
+                        reader.onloadend = function() {
+                            const base64String = reader.result;
+                            resolve({
+                                mimeType: blob.type || 'image/jpeg',
+                                data: base64String.substring(base64String.indexOf(',') + 1)
+                            });
+                        };
+                        reader.onerror = (err) => reject("FileReader error.");
+                        reader.readAsDataURL(blob);
+                    } else { reject(`Gagal mengambil gambar: ${response.status}`); }
+                },
+                onerror: (err) => reject("Error mengambil gambar via GM_xmlhttpRequest."),
+                ontimeout: () => reject("Timeout saat mengambil gambar.")
+            });
+        });
+    }
+    // 3. Fungsi callGeminiAPI (VERSI MODIFIKASI DENGAN PROMPT PERSPEKTIF SISWA)
+    function callGeminiAPI(questionText, optionsText, base64ImageDataWithMime) {
+        console.log(`Calling Gemini API for Q: "${questionText.substring(0, 70)}..."`, base64ImageDataWithMime ? "(with image)" : "(no image)");
+        return new Promise((resolve, reject) => {
+            if (!geminiApiKey) {
+                console.error("API Key missing for Gemini call.");
+                reject("API Key tidak tersedia.");
+                return;
+            }
+
+            let promptParts = [];
+
+            // Persona dan Konteks Baru
+            let personaPrompt = `Anda adalah AI tutor yang cerdas. Tugas utama Anda adalah membantu siswa dengan meniru cara berpikir seorang siswa SMA/SMK yang logis saat menghadapi soal pilihan ganda. Tujuan Anda bukan hanya memberikan jawaban yang benar secara absolut, tetapi memilih jawaban yang paling masuk akal dari sudut pandang siswa berdasarkan pengetahuan umum dan materi yang biasa diajarkan di sekolah.`;
+
+            let fullPromptText = `${personaPrompt}\n\n`;
+
+            if (questionText) { fullPromptText += `Teks Pertanyaan (jika ada):\n"${questionText}"\n`; }
+            if (base64ImageDataWithMime) { fullPromptText += `\nGambar terkait pertanyaan juga disertakan. Perhatikan gambar ini dengan saksama.\n`; }
+
+            if (optionsText && optionsText.length > 0) {
+                fullPromptText += `\nBerikut adalah pilihan jawaban yang tersedia (setiap pilihan ada di baris baru):\n`;
+                optionsText.forEach(option => { fullPromptText += `${option}\n`; });
+
+                // Instruksi Baru yang Lebih Detail
+                fullPromptText += `\nInstruksi untuk Anda:\n`;
+                fullPromptText += `1. **Posisikan Diri Sebagai Siswa:** Pikirkan ini dari sudut pandang siswa SMA/SMK. Apa konsep kunci yang paling relevan yang sudah mereka pelajari terkait topik ini?\n`;
+                fullPromptText += `2. **Gunakan Logika Eliminasi:** Analisis setiap pilihan. Identifikasi pilihan yang jelas salah atau kurang tepat. Pikirkan mengapa seorang siswa akan menyingkirkan pilihan tersebut.\n`;
+                fullPromptText += `3. **Pilih Jawaban Paling Logis (Bukan Paling Sempurna):** Dari pilihan yang tersisa, pilih SATU jawaban yang paling mungkin benar menurut logika siswa. Terkadang, jawaban ini adalah yang paling umum atau yang paling sederhana, bukan yang paling teknis atau spesifik.\n`;
+                fullPromptText += `4. **Berikan Alasan Sederhana:** Jelaskan alasan Anda dalam 1-2 kalimat seolah-olah Anda menjelaskan kepada teman. Gunakan bahasa yang mudah dimengerti.\n`;
+                fullPromptText += `5. **Format Wajib:** Respons Anda HARUS dan HANYA mengikuti format ini:\n`;
+                fullPromptText += `Jawaban Pilihan: [Tuliskan di sini teks persis dari pilihan jawaban yang Anda pilih]\n`;
+                fullPromptText += `Alasan: [Tuliskan di sini alasan singkat dan sederhana Anda]\n\n`;
+                fullPromptText += `Contoh jika pertanyaannya "Proses tumbuhan membuat makanan disebut?" dan pilihannya adalah "Respirasi" dan "Fotosintesis", respons yang benar adalah:\n`;
+                fullPromptText += `Jawaban Pilihan: Fotosintesis\n`;
+                fullPromptText += `Alasan: Fotosintesis adalah proses di mana tumbuhan menggunakan cahaya matahari untuk membuat makanannya sendiri, ini adalah materi dasar pelajaran biologi.\n`;
+                fullPromptText += `\nPASTIKAN "Jawaban Pilihan:" diisi dengan salah satu dari pilihan yang diberikan untuk pertanyaan saat ini. Mengerti?`;
+
+            } else {
+                // Bagian untuk isian singkat (tetap sama dengan skrip Anda sebelumnya)
+                fullPromptText += `\nJika ini adalah pertanyaan isian singkat atau tidak ada pilihan yang diberikan secara eksplisit, berikan jawaban yang paling singkat dan relevan untuk pertanyaan di atas (berdasarkan teks dan/atau gambar), lalu berikan alasan singkat (1 kalimat) untuk jawaban tersebut. Format:\nJawaban: [jawabanmu]\nAlasan: [alasanmu]`;
+            }
+
+            promptParts.push({ "text": fullPromptText });
+            if (base64ImageDataWithMime && base64ImageDataWithMime.data) {
+                 promptParts.push({ "inlineData": { "mimeType": base64ImageDataWithMime.mimeType, "data": base64ImageDataWithMime.data } });
+            }
+
+            // Menggunakan model dan URL endpoint yang direkomendasikan dan lebih stabil
+            const modelToUse = "gemini-2.0-flash";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelToUse}:generateContent?key=${geminiApiKey}`;
+
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: apiUrl,
+                headers: { "Content-Type": "application/json" },
+                data: JSON.stringify({
+                    "contents": [{ "parts": promptParts }],
+                    "generationConfig": { "temperature": 0.1, "topK": 1, "maxOutputTokens": 300 }
+                }),
+                onload: function(response) {
+                    if (response.status >= 200 && response.status < 300) {
+                        try {
+                            const jsonResponse = JSON.parse(response.responseText);
+                            if (jsonResponse.candidates && jsonResponse.candidates[0].content && jsonResponse.candidates[0].content.parts) {
+                                let rawAnswerFromAI = jsonResponse.candidates[0].content.parts[0].text.trim();
+                                resolve(rawAnswerFromAI);
+                            } else {
+                                let errMessage = "Struktur respons API tidak valid.";
+                                if (jsonResponse.error && jsonResponse.error.message) {
+                                    errMessage = `Error API: ${jsonResponse.error.message}`;
+                                    if (jsonResponse.error.message.includes("API key not valid")) {
+                                        alert("API Key Anda tidak valid. Silakan periksa kembali.");
+                                        GM_setValue(GEMINI_API_KEY_STORAGE, null);
+                                        geminiApiKey = '';
+                                    }
+                                }
+                                reject(errMessage);
+                            }
+                        } catch (e) {
+                            reject("Gagal memparsing respons API: " + e.message);
+                        }
+                    } else {
+                        let errMessage = `Permintaan API gagal: ${response.status}.`;
+                        try {
+                            const errorResponse = JSON.parse(response.responseText);
+                            if (errorResponse.error && errorResponse.error.message) {
+                                errMessage = `Permintaan API gagal: ${response.status}. Pesan: ${errorResponse.error.message}`;
+                                if (errorResponse.error.message.includes("API key not valid")) {
+                                    alert("API Key Anda tidak valid. Silakan periksa kembali.");
+                                    GM_setValue(GEMINI_API_KEY_STORAGE, null);
+                                    geminiApiKey = '';
+                                }
+                            }
+                        } catch (e) { /* abaikan error parsing dari respons error */ }
+                        reject(errMessage);
+                    }
+                },
+                onerror: (error) => reject("Error pada GM_xmlhttpRequest. Periksa koneksi atau @connect di header skrip."),
+                ontimeout: () => reject("Permintaan API timeout.")
+            });
+        });
+    }
+    // 4. Fungsi extractQuestionsAndOptions
+    function extractQuestionsAndOptions() {
+        console.log("Extracting questions, options, and images...");
+        const questions = [];
+        const blockSelectors = ['div[role="listitem"]','div.freebirdFormviewerComponentsQuestionBaseRoot','div.Qr7Oae','form > div > div > div.RH5hzf.RLS9Fe > div.lrKTG > div','.m2Rhef.KKjvXb.DE3NNc.cd29Sd.zpCp3.SmR8'];
+        let questionBlocks = [];
+        for (const selector of blockSelectors) { questionBlocks = document.querySelectorAll(selector); if (questionBlocks.length > 0) { /* console.log(`Found ${questionBlocks.length} blocks using: "${selector}"`);*/ break; }}
+        if (questionBlocks.length === 0) { questionBlocks = document.querySelectorAll('div[jscontroller][data-item-id]'); if (questionBlocks.length === 0) { console.warn("Still no question blocks found."); return []; } else { /* console.log(`Found ${questionBlocks.length} blocks using fallback.`);*/ }}
+        questionBlocks.forEach((block) => {
+            let questionText = '', options = [], questionType = 'unknown', imageUrl = null;
+            let qTextEl = block.querySelector('.freebirdFormviewerComponentsQuestionBaseHeader > div[role="heading"], div[role="heading"][aria-level="3"], .M4DNQ label, .f4kHBe') || block.querySelector('div[role="heading"] span:not([aria-hidden="true"])');
+            if (qTextEl) questionText = qTextEl.textContent.trim(); else { const lblBy = block.getAttribute('aria-labelledby'); if (lblBy) { const lbl = document.getElementById(lblBy); if (lbl) questionText = lbl.textContent.trim(); }}
+            if (!questionText || questionText.length < 3) { const dataParamsEl = block.querySelector('[data-params]'); if (dataParamsEl) { try { const params = dataParamsEl.dataset.params; const regex = /\["(.+?)",null,\[\[(\d+)/; const match = params.match(regex); if (match && match[1]) questionText = match[1]; } catch (e) { /* ignore */ }}}
+            const imageElement = block.querySelector('.freebirdFormviewerComponentsQuestionBaseHeader img, .freebirdFormviewerComponentsQuestionBaseRoot .geS5n img, div[aria-live="polite"] img');
+            if (imageElement && imageElement.src) { imageUrl = imageElement.src; if (!questionText && imageElement.alt) questionText = imageElement.alt.trim(); else if (!questionText) questionText = "(Pertanyaan berbasis gambar)";}
+            if ((!questionText || questionText.length < 3) && !imageUrl) return; if (!questionText && imageUrl) questionText = "(Pertanyaan pada gambar)";
+            const radioGroup = block.querySelector('div[role="radiogroup"]');
+            if (radioGroup) { questionType = 'multiple_choice'; radioGroup.querySelectorAll('div[role="radio"]').forEach(optEl => { let optTextEl = optEl.querySelector('.MocG8c, .ার্ভ, span:not([aria-hidden="true"])'); let optText = (optTextEl ? optTextEl.textContent.trim() : (optEl.getAttribute('aria-label') || optEl.dataset.value || optEl.getAttribute('data-value') || "")).trim(); if (optText) options.push(optText); });
+            } else { const checkboxContainer = block.querySelector('div[role="list"][aria-label*="checkbox"], div[aria-labelledby][role="group"]') || block; const checkboxes = checkboxContainer.querySelectorAll('div[role="checkbox"]'); if(checkboxes.length > 0){ questionType = 'checkbox'; checkboxes.forEach(optEl => { let optTextEl = optEl.querySelector('.MocG8c, .ার্ভ, span:not([aria-hidden="true"])'); let optText = (optTextEl ? optTextEl.textContent.trim() : (optEl.getAttribute('aria-label') || optEl.dataset.value || optEl.getAttribute('data-value') || "")).trim(); if (optText) options.push(optText); });}}
+            if (questionType === 'unknown') {
+                if (block.querySelector('input[type="text"].quantumWizTextinputPaperinputInput, input[type="text"][aria-label], .whsOnd.zHQkBf')) questionType = 'short_answer';
+                else if (block.querySelector('textarea.quantumWizTextinputPapertextareaInput, textarea[aria-label], .KHxj8b.tL9Q4c')) questionType = 'paragraph';
+                else if (block.querySelector('div[role="combobox"], div.quantumWizMenuPaperselectOptionList')) { questionType = 'dropdown'; block.querySelectorAll('div[role="option"] span, div.quantumWizMenuPaperselectOption div:not([aria-hidden="true"]), [jsname="V68bde"]').forEach(optEl => { if (optEl.textContent.trim()) options.push(optEl.textContent.trim()); });}}
+            if ((questionType === 'multiple_choice' || questionType === 'checkbox' || questionType === 'dropdown') && options.length === 0 && !imageUrl) return;
+            questions.push({ block, questionText, options, type: questionType, imageUrl, index: questions.length });
+        });
+        console.log("Extraction finished.", questions.length, "questions found.");
+        return questions;
+    }
+
+    // 5. Fungsi applySuggestion
+    function applySuggestion(questionData, suggestedAnswerText) {
+        console.log(`Applying: "${suggestedAnswerText}" for Q: "${questionData.questionText.substring(0,20)}..."`);
+        const { block, type, options } = questionData; let applied = false;
+        const normalizedSuggestion = suggestedAnswerText.replace(/\s+/g, ' ').trim();
+        if (type === 'multiple_choice' || type === 'dropdown') {
+            block.querySelectorAll('div[role="radio"]').forEach((radio) => { let optTextEl = radio.querySelector('.MocG8c, .ার্ভ, span:not([aria-hidden="true"])'); let optText = (optTextEl ? optTextEl.textContent.trim() : (radio.getAttribute('aria-label') || radio.dataset.value || radio.getAttribute('data-value') || "")).replace(/\s+/g, ' ').trim(); if (optText === normalizedSuggestion) { if (radio.getAttribute('aria-checked') !== 'true') radio.click(); applied = true; }});
+        } else if (type === 'checkbox') {
+            block.querySelectorAll('div[role="checkbox"]').forEach((checkbox) => { let optTextEl = checkbox.querySelector('.MocG8c, .ার্ভ, span:not([aria-hidden="true"])'); let optText = (optTextEl ? optTextEl.textContent.trim() : (checkbox.getAttribute('aria-label') || checkbox.dataset.value || checkbox.getAttribute('data-value') || "")).replace(/\s+/g, ' ').trim(); if (optText === normalizedSuggestion) { if (checkbox.getAttribute('aria-checked') !== 'true') checkbox.click(); applied = true; }});
+        } else if (type === 'short_answer') { const input = block.querySelector('input[type="text"].quantumWizTextinputPaperinputInput, input[type="text"][aria-label], .whsOnd.zHQkBf'); if (input) { input.value = suggestedAnswerText; input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); applied = true; }}
+        else if (type === 'paragraph') { const textarea = block.querySelector('textarea.quantumWizTextinputPapertextareaInput, textarea[aria-label], .KHxj8b.tL9Q4c'); if (textarea) { textarea.value = suggestedAnswerText; textarea.dispatchEvent(new Event('input', { bubbles: true })); textarea.dispatchEvent(new Event('change', { bubbles: true })); applied = true; }}
+        if (applied) { block.style.transition = 'outline 0.5s ease-in-out'; block.style.outline = '3px solid lightgreen'; setTimeout(() => { if(block.style) block.style.outline = 'none'; }, 1500); }
+        else { if(options && options.length > 0 || type === 'short_answer' || type === 'paragraph') { console.warn(`Failed to apply suggestion for Q: "${questionData.questionText.substring(0,30)}..."`); }}
+    }
+
+    // 6. Fungsi parseGeminiResponse
+    function parseGeminiResponse(responseText, questionType) {
+        let choice = null, reason = null; const choiceRegexMC = /Jawaban Pilihan:\s*(.*?)\nAlasan:\s*(.*)/s; const choiceRegexShort = /Jawaban:\s*(.*?)\nAlasan:\s*(.*)/s;
+        let match = (questionType === "multiple_choice" || questionType === "checkbox" || questionType === "dropdown") ? responseText.match(choiceRegexMC) : responseText.match(choiceRegexShort);
+        if (match) { choice = match[1].trim(); reason = match[2].trim();
+        } else { const lines = responseText.split('\n'); if (lines.length > 0) { if (lines[0].toLowerCase().startsWith("jawaban pilihan:")) choice = lines[0].substring("jawaban pilihan:".length).trim(); else if (lines[0].toLowerCase().startsWith("jawaban:")) choice = lines[0].substring("jawaban:".length).trim(); else choice = lines[0].trim(); if (lines.length > 1) { if (lines[1].toLowerCase().startsWith("alasan:")) reason = lines.slice(1).join("\n").substring("alasan:".length).trim(); else reason = lines.slice(1).join('\n').trim(); } else reason = "Alasan tidak terdeteksi."; } else { choice = responseText; reason = "Gagal parse."; }}
+        if (choice && /^["'](.*)["']$/.test(choice)) choice = choice.substring(1, choice.length - 1);
+        return { choice, reason };
+    }
+
+    // 7. Fungsi resetPreviousQuestionHighlight
+    function resetPreviousQuestionHighlight() {
+        allQuestionsData.forEach(qData => { if (qData.block && qData.block.style.outline && (qData.block.style.outline.includes('orange') || qData.block.style.outline.includes('lightgreen'))) { qData.block.style.outline = 'none'; }});
+    }
+    // ===================================================================================
+    // GANTI FUNGSI LAMA ANDA DENGAN FUNGSI BARU DI BAWAH INI
+    // ===================================================================================
+
+    // 8. Fungsi processQuestion (Diperbarui dengan Cooldown untuk mencegah Error 429)
+    async function processQuestion(index) {
+        if (index >= allQuestionsData.length) {
+            updateSolverUI( "Selesai! Semua pertanyaan telah diproses.", "Anda dapat menutup panel ini sekarang (klik ✖ atau 🤖).", "", false, allQuestionsData.length > 0, false, null, false );
+            if (solverToggleBubble) solverToggleBubble.textContent = '✅';
+            setTimeout(() => { if(uiContainer && uiContainer.style.display !== 'none') toggleSolverUI(false); if (solverToggleBubble && solverToggleBubble.textContent === '✅') solverToggleBubble.textContent = '🤖'; }, 3000);
+            return;
+        }
+
+        currentQuestionIndex = index;
+        const questionData = allQuestionsData[index];
+        const cooldownMs = 10000; // Jeda 10 detik (10000 milidetik). Naikkan menjadi 3000 jika masih error.
+
+        // 1. Tampilkan status loading dan nonaktifkan tombol
+        updateSolverUI( `Memproses Soal ${index + 1}/${allQuestionsData.length}: ${questionData.questionText.substring(0,70)}...${questionData.imageUrl ? ' (gambar)' : ''}`, "", "", true, index > 0, index < allQuestionsData.length - 1 );
+        if(questionData.block) {
+            resetPreviousQuestionHighlight();
+            questionData.block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            questionData.block.style.outline = '3px dashed orange';
+        }
+
+        try {
+            let base64Image = null;
+            if (questionData.imageUrl) {
+                base64Image = await getImageAsBase64(questionData.imageUrl).catch(e => {
+                    console.warn("Image conversion error:", e);
+                    return null;
+                });
+            }
+
+            // Memanggil fungsi yang benar: callGeminiAPI
+            const geminiResponseText = await callGeminiAPI(questionData.questionText, questionData.options, base64Image);
+            const { choice, reason } = parseGeminiResponse(geminiResponseText, questionData.type);
+
+            if (choice) {
+                // 2. Tampilkan hasil, TAPI tombol masih nonaktif (isLoading = true) untuk cooldown
+                updateSolverUI(
+                    `Soal ${index + 1}/${allQuestionsData.length}: ${questionData.questionText.substring(0,100)}...${questionData.imageUrl ? '(gbr)' : ''}`,
+                    `Saran Jawaban: ${choice}`,
+                    `Alasan: ${reason}`,
+                    true, // <-- Tetap true untuk menjaga tombol nonaktif selama cooldown
+                    index > 0,
+                    index < allQuestionsData.length - 1,
+                    choice
+                );
+            } else {
+                 // 2. Tampilkan error, TAPI tombol masih nonaktif
+                updateSolverUI(
+                    `Soal ${index + 1}/${allQuestionsData.length}: Gagal mendapatkan saran.`,
+                    "Error: Tidak ada jawaban terdeteksi dari Gemini.",
+                    geminiResponseText,
+                    true, // <-- Tetap true
+                    index > 0,
+                    index < allQuestionsData.length -1
+                );
+            }
+
+        } catch (error) {
+            console.error("Error processing question:", error);
+             // 2. Tampilkan error API, TAPI tombol masih nonaktif
+            updateSolverUI(
+                `Error Soal ${index + 1}: ${error.toString().substring(0,100)}...`,
+                "Coba lagi atau lewati.",
+                "",
+                true, // <-- Tetap true
+                index > 0,
+                index < allQuestionsData.length -1
+            );
+        } finally {
+            // 3. Setelah cooldown, panggil lagi updateSolverUI untuk mengaktifkan tombol
+            setTimeout(() => {
+                // Cek lagi data saat ini dari UI untuk memastikan sinkronisasi
+                const qTextDiv = document.getElementById('solver-question-text');
+                const suggestionDiv = document.getElementById('solver-gemini-suggestion');
+                const reasonDiv = document.getElementById('solver-gemini-reason');
+
+                const currentQuestionText = qTextDiv ? qTextDiv.textContent : "Soal...";
+                const currentSuggestion = suggestionDiv ? suggestionDiv.textContent : "Saran...";
+                const currentReason = reasonDiv ? reasonDiv.textContent : "Alasan...";
+                const suggestedAnswerForApply = suggestionDiv ? suggestionDiv.textContent.replace('Saran Jawaban: ', '').trim() : null;
+
+                updateSolverUI(
+                    currentQuestionText,
+                    currentSuggestion,
+                    currentReason,
+                    false, // <-- Set menjadi false untuk MENGAKTIFKAN kembali tombol
+                    currentQuestionIndex > 0,
+                    currentQuestionIndex < allQuestionsData.length - 1,
+                    suggestedAnswerForApply
+                );
+            }, cooldownMs);
+        }
+    }
+    // 9. Fungsi createSolverToggleBubble
+    function createSolverToggleBubble() {
+        if (document.getElementById('gemini-solver-toggle-bubble')) { solverToggleBubble = document.getElementById('gemini-solver-toggle-bubble'); return; }
+        solverToggleBubble = document.createElement('div'); solverToggleBubble.id = 'gemini-solver-toggle-bubble';
+        solverToggleBubble.textContent = '🤖'; solverToggleBubble.title = 'Tampilkan/Sembunyikan Gemini Solver';
+        solverToggleBubble.style.cssText = `position: fixed; bottom: 20px; right: 20px; width: 45px; height: 45px; background-color: #007bff; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; z-index: 10000; box-shadow: 0 2px 10px rgba(0,0,0,0.3); transition: background-color 0.2s, transform 0.2s;`;
+        solverToggleBubble.onmouseover = () => { solverToggleBubble.style.transform = 'scale(1.1)'; };
+        solverToggleBubble.onmouseout = () => { solverToggleBubble.style.transform = 'scale(1)'; };
+        solverToggleBubble.onclick = () => { if (!uiContainer || uiContainer.style.display === 'none') { toggleSolverUI(true); } else { toggleSolverUI(false); }};
+        document.body.appendChild(solverToggleBubble);
+    }
+
+    // 10. Fungsi toggleSolverUI
+    function toggleSolverUI(show) {
+        if (!uiContainer) { createSolverUIStructure(); }
+        if (show) {
+            if (uiContainer.style.display === 'none') {
+                uiContainer.style.display = 'flex';
+                if (!geminiApiKey) { updateSolverUI("API Key dibutuhkan!", "Klik 🤖 lalu 'Mulai'.", "", false, false,false,null,true);
+                } else if (allQuestionsData.length === 0 && geminiApiKey) { updateSolverUI("Klik 'Mulai' untuk memproses soal.", "", "", false, false, false, null, true);
+                } else if (currentQuestionIndex < allQuestionsData.length) {
+                    const qData = allQuestionsData[currentQuestionIndex]; const suggestionDiv = document.getElementById('solver-gemini-suggestion'); const reasonDiv = document.getElementById('solver-gemini-reason');
+                    const currentSuggestedAnswer = suggestionDiv ? suggestionDiv.textContent.replace('Saran Jawaban: ', '').trim() : null; const currentReason = reasonDiv ? reasonDiv.textContent.replace('Alasan: ', '').trim() : null;
+                    updateSolverUI( `Soal ${currentQuestionIndex + 1}/${allQuestionsData.length}: ${qData.questionText.substring(0,100)}...${qData.imageUrl ? '(gbr)' : ''}`, currentSuggestedAnswer ? `Saran Jawaban: ${currentSuggestedAnswer}` : "Memuat...", currentReason ? `Alasan: ${currentReason}` : "", false, currentQuestionIndex > 0, currentQuestionIndex < allQuestionsData.length - 1, currentSuggestedAnswer );
+                } else { updateSolverUI("Selesai! Semua pertanyaan telah diproses.","Tutup panel (klik ✖ atau 🤖).","", false, allQuestionsData.length > 0, false, null, false); }
+            }
+        } else { if (uiContainer) uiContainer.style.display = 'none'; }
+        if(solverToggleBubble) solverToggleBubble.textContent = show ? '🔽' : '🤖';
+    }
+
+    // 11. Fungsi createSolverUIStructure
+    function createSolverUIStructure() {
+        if (document.getElementById('gemini-solver-ui-main')) { uiContainer = document.getElementById('gemini-solver-ui-main'); return; }
+        uiContainer = document.createElement('div'); uiContainer.id = 'gemini-solver-ui-main';
+        uiContainer.style.cssText = `position: fixed; bottom: 75px; right: 20px; width: 360px; max-height: 80vh; background-color: white; border: 1px solid #ccc; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 9999; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; display: none; flex-direction: column;`;
+        document.body.appendChild(uiContainer);
+        function createStyledElement(tag, id, cssText, textContent = null) { const el = document.createElement(tag); if (id) el.id = id; el.style.cssText = cssText; if (textContent) el.textContent = textContent; return el; }
+        const headerContainer = createStyledElement('div', 'solver-header-container', "display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #eee; background-color: #f8f9fa; border-top-left-radius: 10px; border-top-right-radius: 10px;");
+        const headerText = createStyledElement('span', null, "font-weight: 600; font-size: 1em;", "Gemini Solver"); headerContainer.appendChild(headerText);
+        const closeButton = createStyledElement('span', null, "cursor: pointer; font-size: 20px; color: #777; padding: 0 5px;", '✖'); closeButton.title = 'Tutup Panel Solver'; closeButton.onclick = () => toggleSolverUI(false); headerContainer.appendChild(closeButton); uiContainer.appendChild(headerContainer);
+        const contentArea = createStyledElement('div', 'solver-content-area', "padding: 15px; overflow-y: auto; flex-grow: 1;");
+        const qTextDiv = createStyledElement('div', 'solver-question-text', "margin-bottom: 8px; font-size: 0.9em; font-weight: 500; max-height: 80px; overflow-y: auto; color: #333;"); contentArea.appendChild(qTextDiv);
+        const suggestionDiv = createStyledElement('div', 'solver-gemini-suggestion', "margin-bottom: 8px; padding: 8px; border: 1px dashed #ddd; background: #fdfdfd; font-size: 0.95em; max-height: 100px; overflow-y: auto; border-radius: 4px;"); contentArea.appendChild(suggestionDiv);
+        const reasonDiv = createStyledElement('div', 'solver-gemini-reason', "margin-bottom: 10px; font-size: 0.85em; color: #555; max-height: 80px; overflow-y: auto; line-height: 1.4;"); contentArea.appendChild(reasonDiv);
+        const statusDiv = createStyledElement('div', 'solver-status', "font-style: italic; margin-bottom: 10px; font-size:0.85em; color: #666;"); contentArea.appendChild(statusDiv); uiContainer.appendChild(contentArea);
+        const controlsFooter = createStyledElement('div', 'solver-controls-footer', "padding: 10px 15px; border-top: 1px solid #eee; background-color: #f8f9fa;");
+        const controlsDiv = createStyledElement('div', 'solver-controls', "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"); controlsFooter.appendChild(controlsDiv);
+        const keyButtonContainer = createStyledElement('div', 'solver-key-button-container', "text-align: center;");
+        const resetApiKeyButton = createStyledElement('button', null, "padding: 6px 10px; background-color: #ffc107; color: black; border: none; border-radius: 4px; cursor: pointer; font-size:0.8em;"); resetApiKeyButton.title = "Reset / Ganti API Key";
+        const svgIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svgIcon.setAttribute("width", "12"); svgIcon.setAttribute("height", "12"); svgIcon.setAttribute("viewBox", "0 0 24 24"); svgIcon.setAttribute("fill", "none"); svgIcon.setAttribute("stroke", "currentColor"); svgIcon.setAttribute("stroke-width", "2"); svgIcon.setAttribute("stroke-linecap", "round"); svgIcon.setAttribute("stroke-linejoin", "round"); svgIcon.style.cssText = "vertical-align: middle; margin-right: 4px;"; const path = document.createElementNS("http://www.w3.org/2000/svg", "path"); path.setAttribute("d", "M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"); svgIcon.appendChild(path);
+        resetApiKeyButton.appendChild(svgIcon); resetApiKeyButton.appendChild(document.createTextNode(' Ganti API Key'));
+        resetApiKeyButton.onclick = async () => { await GM_setValue(GEMINI_API_KEY_STORAGE, null); geminiApiKey = ''; alert('API Key direset. Klik ikon 🤖 lalu "Mulai" untuk memasukkan API Key baru.'); allQuestionsData = []; currentQuestionIndex = 0; updateSolverUI("API Key direset.", "Klik 🤖 lalu 'Mulai'.", "", false,false,false,null,true); if (uiContainer && uiContainer.style.display === 'none') toggleSolverUI(true); };
+        keyButtonContainer.appendChild(resetApiKeyButton); controlsFooter.appendChild(keyButtonContainer); uiContainer.appendChild(controlsFooter);
+    }
+
+    // 12. Fungsi updateSolverUI
+    function updateSolverUI(questionText, suggestion, reason, isLoading, prevEnabled, nextEnabled, suggestedAnswerForApply = null, showStartButton = false) {
+        if (!uiContainer || (uiContainer.style.display === 'none' && !showStartButton && !isLoading)) {
+             if (isLoading && solverToggleBubble) solverToggleBubble.textContent = '⏳';
+             else if (solverToggleBubble && solverToggleBubble.textContent === '⏳') solverToggleBubble.textContent = (uiContainer && uiContainer.style.display !== 'none') ? '🔽' : '🤖';
+            return;
+        }
+        if (solverToggleBubble && solverToggleBubble.textContent === '⏳' && !isLoading && uiContainer && uiContainer.style.display !== 'none') solverToggleBubble.textContent = '🔽';
+        else if (solverToggleBubble && solverToggleBubble.textContent === '⏳' && !isLoading && (!uiContainer || uiContainer.style.display === 'none')) solverToggleBubble.textContent = '🤖';
+
+        const qTextDiv = document.getElementById('solver-question-text'); const suggestionDiv = document.getElementById('solver-gemini-suggestion'); const reasonDiv = document.getElementById('solver-gemini-reason'); const statusDiv = document.getElementById('solver-status'); const controlsDiv = document.getElementById('solver-controls');
+        if (!qTextDiv || !suggestionDiv || !reasonDiv || !statusDiv || !controlsDiv) { console.warn("Solver UI elements not found. Recreating."); createSolverUIStructure(); if (uiContainer && !showStartButton) uiContainer.style.display = 'flex'; setTimeout(() => updateSolverUI(questionText, suggestion, reason, isLoading, prevEnabled, nextEnabled, suggestedAnswerForApply, showStartButton), 150); return; }
+        qTextDiv.textContent = questionText || " "; suggestionDiv.textContent = suggestion || " "; reasonDiv.textContent = reason || " ";
+        const isTrulyFinished = !nextEnabled && !isLoading && !showStartButton && (allQuestionsData.length > 0 && currentQuestionIndex >= allQuestionsData.length -1) ;
+        if (isTrulyFinished) { statusDiv.textContent = "Selesai. Semua soal telah diproses.";
+        } else if (isLoading) { statusDiv.textContent = "Memuat..."; if(solverToggleBubble && uiContainer.style.display !== 'none') solverToggleBubble.textContent = '⏳';
+        } else if (showStartButton) { statusDiv.textContent = "Klik 'Mulai' untuk memproses soal.";
+        } else { statusDiv.textContent = "Siap."; }
+        while (controlsDiv.firstChild) { controlsDiv.removeChild(controlsDiv.firstChild); }
+
+        if (showStartButton) {
+            const startButton = document.createElement('button'); startButton.textContent = 'Mulai Proses Soal';
+            startButton.style.cssText = "padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 1em; font-weight: 500;";
+            startButton.onclick = async () => {
+                startButton.disabled = true; startButton.textContent = "Memuat...";
+                if (!geminiApiKey) { await getApiKey(); if (!geminiApiKey) { updateSolverUI("API Key dibutuhkan!", "Pastikan API Key dimasukkan.", "", false,false,false,null,true); startButton.disabled = false; startButton.textContent = "Mulai Proses Soal"; return; }}
+                allQuestionsData = extractQuestionsAndOptions();
+                if (allQuestionsData.length > 0) { currentQuestionIndex = -1; resetPreviousQuestionHighlight(); processQuestion(0);
+                } else { updateSolverUI("Tidak ada soal terdeteksi.", "Periksa selektor/muat ulang.", "", false,false,false,null,true); startButton.disabled = false; startButton.textContent = "Mulai Proses Soal"; }
+            }; controlsDiv.appendChild(startButton);
+        } else {
+            const btnCssBase = "padding: 8px 0; border: 1px solid #ccc; background-color: #f0f0f0; border-radius: 4px; cursor: pointer; font-size: 0.9em; flex-grow:1; margin: 0 3px; display: flex; align-items: center; justify-content: center;"; const btnDisabledCss = "opacity: 0.5; cursor: default;";
+            const prevButton = document.createElement('button'); prevButton.textContent = '◀ Seb'; prevButton.title = "Soal Sebelumnya"; prevButton.disabled = !prevEnabled || isLoading;
+            prevButton.style.cssText = btnCssBase + (prevButton.disabled ? btnDisabledCss : "");
+            prevButton.onclick = () => { if (currentQuestionIndex > 0) { resetPreviousQuestionHighlight(); processQuestion(currentQuestionIndex - 1); } }; controlsDiv.appendChild(prevButton);
+            if (suggestedAnswerForApply && !isLoading && !isTrulyFinished) {
+                const applyButton = document.createElement('button'); applyButton.textContent = 'Terapkan'; applyButton.title = "Terapkan Jawaban";
+                applyButton.style.cssText = btnCssBase + "background-color: #007bff; color: white; border-color: #007bff; flex-grow:1.5;";
+                applyButton.onclick = () => { const currentQData = allQuestionsData[currentQuestionIndex]; if (currentQData) applySuggestion(currentQData, suggestedAnswerForApply); }; controlsDiv.appendChild(applyButton);
+            } else if (isLoading) { const loadingIndicator = document.createElement('span'); loadingIndicator.textContent = '⏳ Memuat...'; loadingIndicator.style.cssText = "flex-grow:1.5; text-align: center; padding: 8px 0; font-size:0.9em; color: #555; display: flex; align-items: center; justify-content: center;"; controlsDiv.appendChild(loadingIndicator);
+            } else { const placeholder = document.createElement('span'); placeholder.style.cssText = "flex-grow: 1.5; margin: 0 3px;"; controlsDiv.appendChild(placeholder); }
+            const nextButton = document.createElement('button'); nextButton.textContent = 'Berik ▶'; nextButton.title = "Soal Berikutnya"; nextButton.disabled = !nextEnabled || isLoading;
+            nextButton.style.cssText = btnCssBase + (nextButton.disabled ? btnDisabledCss : "");
+            nextButton.onclick = () => { if (nextEnabled && currentQuestionIndex < allQuestionsData.length - 1) { resetPreviousQuestionHighlight(); processQuestion(currentQuestionIndex + 1); }}; controlsDiv.appendChild(nextButton);
+        }
+    }
+
+    // 13. Fungsi Inisialisasi Utama
+    async function main() {
+        console.log("Initializing main function for Gemini Solver...");
+        if (document.querySelector('div[role="progressbar"]')) { console.warn("Form multi-halaman terdeteksi."); }
+        createSolverToggleBubble();
+    }
+
+    // Penanganan document ready state
+    if (document.readyState === 'complete' || document.readyState === 'interactive' || document.readyState === 'loaded' ) {
+        main();
+    } else {
+        window.addEventListener('load', main);
+    }
+})();
