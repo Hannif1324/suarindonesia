@@ -408,26 +408,16 @@ export class ArticleEditor {
     }
 
     /**
-     * Render all sections with form value preservation
+     * Render all sections - values are synced before mutation in event handlers
      */
     renderAllSections() {
         const container = document.getElementById('sections-container');
         if (!container) return;
 
-        // 1. Capture current form values BEFORE clearing
-        const currentValues = this.captureFormValues();
-
-        // 2. Update sections array with captured values
-        currentValues.forEach((value, index) => {
-            if (this.sections[index]) {
-                this.sections[index] = { ...this.sections[index], ...value };
-            }
-        });
-
-        // 3. Clear container
+        // Clear container
         container.innerHTML = '';
 
-        // 4. Re-render with updated values
+        // Re-render with current values from this.sections
         this.sections.forEach((section, index) => {
             const sectionEl = this.renderSection(section, index);
             container.appendChild(sectionEl);
@@ -438,25 +428,31 @@ export class ArticleEditor {
     }
 
     attachSectionListeners(sectionEl, index) {
-        // Move up
+        // Move up - sync values first, then get fresh index from DOM
         sectionEl.querySelector('.move-up')?.addEventListener('click', () => {
-            if (index > 0) {
-                [this.sections[index - 1], this.sections[index]] = [this.sections[index], this.sections[index - 1]];
+            this.syncSectionsFromDOM(); // Simpan nilai form sebelum mutasi
+            const currentIndex = parseInt(sectionEl.dataset.index, 10); // Ambil index terbaru dari DOM
+            if (currentIndex > 0) {
+                [this.sections[currentIndex - 1], this.sections[currentIndex]] = [this.sections[currentIndex], this.sections[currentIndex - 1]];
                 this.renderAllSections();
             }
         });
 
-        // Move down
+        // Move down - sync values first, then get fresh index from DOM
         sectionEl.querySelector('.move-down')?.addEventListener('click', () => {
-            if (index < this.sections.length - 1) {
-                [this.sections[index], this.sections[index + 1]] = [this.sections[index + 1], this.sections[index]];
+            this.syncSectionsFromDOM(); // Simpan nilai form sebelum mutasi
+            const currentIndex = parseInt(sectionEl.dataset.index, 10); // Ambil index terbaru dari DOM
+            if (currentIndex < this.sections.length - 1) {
+                [this.sections[currentIndex], this.sections[currentIndex + 1]] = [this.sections[currentIndex + 1], this.sections[currentIndex]];
                 this.renderAllSections();
             }
         });
 
-        // Remove
+        // Remove - sync values first, then get fresh index from DOM
         sectionEl.querySelector('.remove-section')?.addEventListener('click', () => {
-            this.sections.splice(index, 1);
+            this.syncSectionsFromDOM(); // Simpan nilai form sebelum mutasi
+            const currentIndex = parseInt(sectionEl.dataset.index, 10); // Ambil index terbaru dari DOM
+            this.sections.splice(currentIndex, 1);
             this.renderAllSections();
         });
 
@@ -477,6 +473,49 @@ export class ArticleEditor {
             });
             videoUploadContainer.appendChild(widget);
         }
+    }
+
+    /**
+     * Sync this.sections array with current DOM form values
+     * Harus dipanggil SEBELUM operasi mutasi array (delete, move)
+     * untuk memastikan nilai form tersimpan dengan benar
+     */
+    syncSectionsFromDOM() {
+        const container = document.getElementById('sections-container');
+        if (!container) return;
+
+        const sectionElements = container.querySelectorAll('.section-item');
+
+        sectionElements.forEach((sectionEl) => {
+            // Ambil index dari attribute DOM (selalu akurat)
+            const index = parseInt(sectionEl.dataset.index, 10);
+            if (isNaN(index) || !this.sections[index]) return;
+
+            const type = this.sections[index].type;
+
+            // Update this.sections dengan nilai terbaru dari form
+            switch (type) {
+                case 'paragraph':
+                    this.sections[index].content = sectionEl.querySelector('.section-content')?.value || '';
+                    this.sections[index].lead = sectionEl.querySelector('.section-lead')?.checked || false;
+                    break;
+                case 'heading':
+                    this.sections[index].content = sectionEl.querySelector('.section-content')?.value || '';
+                    break;
+                case 'image':
+                    this.sections[index].url = sectionEl.querySelector('.section-image-url')?.value || '';
+                    this.sections[index].caption = sectionEl.querySelector('.section-caption')?.value || '';
+                    break;
+                case 'video':
+                    this.sections[index].url = sectionEl.querySelector('.section-video-url')?.value || '';
+                    this.sections[index].caption = sectionEl.querySelector('.section-caption')?.value || '';
+                    break;
+                case 'quote':
+                    this.sections[index].content = sectionEl.querySelector('.section-content')?.value || '';
+                    this.sections[index].author = sectionEl.querySelector('.section-author')?.value || '';
+                    break;
+            }
+        });
     }
 
     addGalleryImage() {

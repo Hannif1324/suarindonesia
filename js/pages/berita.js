@@ -13,19 +13,12 @@ export class BeritaPage {
             hero: {
                 title: "Berita & Artikel",
                 subtitle: "Informasi terkini seputar kegiatan dan program SuaR Indonesia",
-                image: "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=1920,fit=crop/YZ9b16O2aksMXqwd/whatsapp-image-2024-09-09-at-12.34.44-YKbrRk0pQ5sbwzEn.jpeg"
+                image: "/public/images/kegiatan/ca8b51c5-e5a1-4069-9d86-59839d9337a2.jpeg"
             },
-            categories: [
-                { id: 'semua', label: 'Semua' },
-                { id: 'berita', label: 'Berita' },
-                { id: 'program', label: 'Program' },
-                { id: 'kegiatan', label: 'Kegiatan' },
-                { id: 'artikel', label: 'Artikel' }
-            ],
             articles: []
         };
-        this.currentCategory = 'semua';
         this.carouselIndex = 0;
+        this.sliderPage = 0; // Current page untuk artikel slider
         this.isLoading = true;
     }
 
@@ -74,9 +67,9 @@ export class BeritaPage {
         await this.fetchArticles();
 
         container.appendChild(this.renderHero());
-        container.appendChild(this.renderCategoryFilter());
+        // Category filter dihapus sesuai permintaan
         container.appendChild(this.renderFeaturedCarousel());
-        container.appendChild(this.renderArticleGrid());
+        container.appendChild(this.renderArticleSlider());
 
         // Attach event listeners after render
         setTimeout(() => this.attachEventListeners(), 100);
@@ -114,29 +107,6 @@ export class BeritaPage {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
                         </svg>
                     </button>
-                </div>
-            </div>
-        `;
-
-        return section;
-    }
-
-    renderCategoryFilter() {
-        const section = DOM.create('section', {
-            className: 'py-8 bg-white sticky top-20 z-30 shadow-sm border-b'
-        });
-
-        section.innerHTML = `
-            <div class="container mx-auto px-4">
-                <div class="flex overflow-x-auto gap-2 md:gap-3 scrollbar-hide pb-2 justify-start md:justify-center">
-                    ${this.data.categories.map(cat => `
-                        <button 
-                            data-category="${cat.id}" 
-                            class="category-filter px-6 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all ${cat.id === 'semua' ? 'bg-purple-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-purple-50 hover:text-purple-600'}"
-                        >
-                            ${cat.label}
-                        </button>
-                    `).join('')}
                 </div>
             </div>
         `;
@@ -201,26 +171,40 @@ export class BeritaPage {
         return section;
     }
 
-    renderArticleGrid() {
+    /**
+     * Render artikel sebagai slider/carousel dengan tombol navigasi
+     * Card design tetap sama, hanya layout yang berubah
+     */
+    renderArticleSlider() {
         const section = DOM.create('section', {
-            className: 'py-12 bg-white min-h-screen'
+            className: 'py-12 bg-white'
         });
 
         section.innerHTML = `
             <div class="container mx-auto px-4">
-                <h2 class="text-2xl font-bold text-gray-800 mb-8 border-l-4 border-purple-600 pl-4">
-                    Artikel Terbaru
-                </h2>
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-2xl font-bold text-gray-800 border-l-4 border-purple-600 pl-4">
+                        Artikel Terbaru
+                    </h2>
+                    <div class="flex gap-2">
+                        <button id="grid-prev" class="p-3 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-600 hover:text-white transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <button id="grid-next" class="p-3 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-600 hover:text-white transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
 
-                <div id="articles-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    ${this.data.articles.map(article => this.renderArticleCard(article)).join('')}
+                <!-- Slider viewport -->
+                <div class="overflow-hidden">
+                    <div id="articles-slider" class="transition-transform duration-500 ease-out">
+                        <!-- Cards akan di-render dalam grid per halaman -->
+                    </div>
                 </div>
                 
-                <div id="empty-state" class="hidden text-center py-20">
-                    <div class="text-6xl mb-4">🔍</div>
-                    <h3 class="text-xl font-semibold text-gray-700">Tidak ada artikel ditemukan</h3>
-                    <p class="text-gray-500">Coba pilih kategori lain.</p>
-                </div>
+                <!-- Page Indicator -->
+                <div id="slider-dots" class="flex justify-center gap-2 mt-8"></div>
             </div>
         `;
 
@@ -278,78 +262,129 @@ export class BeritaPage {
     }
 
     attachEventListeners() {
-        // Category filter
-        const filterButtons = document.querySelectorAll('.category-filter');
-        filterButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const category = e.currentTarget.dataset.category;
-                this.filterArticles(category);
-
-                // Update active state
-                filterButtons.forEach(b => {
-                    b.classList.remove('bg-purple-600', 'text-white', 'shadow-md');
-                    b.classList.add('bg-gray-100', 'text-gray-600');
-                });
-                e.currentTarget.classList.remove('bg-gray-100', 'text-gray-600');
-                e.currentTarget.classList.add('bg-purple-600', 'text-white', 'shadow-md');
-            });
-        });
-
-        // Carousel navigation
+        // Carousel navigation (Berita Unggulan)
         const track = document.getElementById('carousel-track');
-        const prevBtn = document.getElementById('carousel-prev');
-        const nextBtn = document.getElementById('carousel-next');
+        const carouselPrev = document.getElementById('carousel-prev');
+        const carouselNext = document.getElementById('carousel-next');
         let scrollPos = 0;
 
-        if (track && prevBtn && nextBtn) {
-            nextBtn.addEventListener('click', () => {
+        if (track && carouselPrev && carouselNext) {
+            carouselNext.addEventListener('click', () => {
                 scrollPos += 400;
                 if (scrollPos > track.scrollWidth - track.clientWidth) scrollPos = track.scrollWidth - track.clientWidth;
                 track.style.transform = `translateX(-${scrollPos}px)`;
             });
 
-            prevBtn.addEventListener('click', () => {
+            carouselPrev.addEventListener('click', () => {
                 scrollPos -= 400;
                 if (scrollPos < 0) scrollPos = 0;
                 track.style.transform = `translateX(-${scrollPos}px)`;
             });
         }
 
-        // Article click navigation
-        const articleLinks = document.querySelectorAll('[data-slug]');
-        articleLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                // Prevent if clicking category button inside card
-                if (e.target.closest('.category-filter')) return;
+        // Initialize artikel slider
+        this.initGridSlider();
 
-                const slug = e.currentTarget.dataset.slug;
-                // Navigate to article detail page by replacing the entire URL
+        // Article click navigation
+        document.addEventListener('click', (e) => {
+            const cardEl = e.target.closest('[data-slug]');
+            if (cardEl) {
+                const slug = cardEl.dataset.slug;
                 const baseUrl = window.location.origin + window.location.pathname;
                 window.location.href = `${baseUrl}#/artikel/${slug}`;
-            });
+            }
         });
     }
 
-    filterArticles(category) {
-        this.currentCategory = category;
-        const cards = document.querySelectorAll('.article-card');
-        let visibleCount = 0;
+    /**
+     * Inisialisasi slider untuk artikel grid
+     * Responsive: 6 items (desktop), 4 items (tablet), 2 items (mobile)
+     */
+    initGridSlider() {
+        const slider = document.getElementById('articles-slider');
+        const prevBtn = document.getElementById('grid-prev');
+        const nextBtn = document.getElementById('grid-next');
+        const dotsContainer = document.getElementById('slider-dots');
 
-        cards.forEach(card => {
-            if (category === 'semua' || card.dataset.category === category) {
-                card.style.display = 'flex'; // Restore flex layout
-                card.classList.add('fade-in');
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
+        if (!slider || !prevBtn || !nextBtn) return;
+
+        const articles = this.data.articles;
+
+        // Fungsi untuk mendapat jumlah item per halaman berdasarkan viewport
+        const getItemsPerPage = () => {
+            if (window.innerWidth >= 1024) return 6;  // lg: 6 items (3 cols x 2 rows)
+            if (window.innerWidth >= 640) return 4;   // sm: 4 items (2 cols x 2 rows)
+            return 2;                                  // xs: 2 items (1 col x 2 rows)
+        };
+
+        // Fungsi untuk menghitung total halaman
+        const getTotalPages = () => Math.ceil(articles.length / getItemsPerPage());
+
+        // Fungsi untuk render halaman saat ini
+        const renderCurrentPage = () => {
+            const itemsPerPage = getItemsPerPage();
+            const startIdx = this.sliderPage * itemsPerPage;
+            const endIdx = startIdx + itemsPerPage;
+            const pageArticles = articles.slice(startIdx, endIdx);
+
+            // Render cards dalam grid (2 rows)
+            slider.innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${pageArticles.map(article => this.renderArticleCard(article)).join('')}
+                </div>
+            `;
+
+            // Update button states
+            prevBtn.disabled = this.sliderPage === 0;
+            nextBtn.disabled = this.sliderPage >= getTotalPages() - 1;
+
+            // Update dots
+            renderDots();
+        };
+
+        // Fungsi untuk render dots indicator
+        const renderDots = () => {
+            if (!dotsContainer) return;
+            const totalPages = getTotalPages();
+            dotsContainer.innerHTML = Array.from({ length: totalPages }, (_, i) => `
+                <button class="slider-dot w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === this.sliderPage ? 'bg-purple-600 w-8' : 'bg-gray-300 hover:bg-gray-400'}" data-page="${i}"></button>
+            `).join('');
+
+            // Attach click events to dots
+            dotsContainer.querySelectorAll('.slider-dot').forEach(dot => {
+                dot.addEventListener('click', (e) => {
+                    this.sliderPage = parseInt(e.currentTarget.dataset.page, 10);
+                    renderCurrentPage();
+                });
+            });
+        };
+
+        // Event listeners for navigation buttons
+        prevBtn.addEventListener('click', () => {
+            if (this.sliderPage > 0) {
+                this.sliderPage--;
+                renderCurrentPage();
             }
         });
 
-        const emptyState = document.getElementById('empty-state');
-        if (visibleCount === 0) {
-            emptyState.classList.remove('hidden');
-        } else {
-            emptyState.classList.add('hidden');
-        }
+        nextBtn.addEventListener('click', () => {
+            if (this.sliderPage < getTotalPages() - 1) {
+                this.sliderPage++;
+                renderCurrentPage();
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            // Pastikan sliderPage tidak melebihi total pages setelah resize
+            const maxPage = Math.max(0, getTotalPages() - 1);
+            if (this.sliderPage > maxPage) {
+                this.sliderPage = maxPage;
+            }
+            renderCurrentPage();
+        });
+
+        // Initial render
+        renderCurrentPage();
     }
 }

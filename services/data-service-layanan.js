@@ -25,7 +25,7 @@ export const layananData = {
             title: 'Program HIV/AIDS pada Kelompok Rentan',
             subtitle: 'Isu HIV dalam Gerakan Sosial',
             icon: '🏥',
-            image: 'https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=800,fit=crop/YZ9b16O2aksMXqwd/whatsapp-image-2024-10-07-at-14.19.09_5bc81605-YX4yLrOKqNS6Prly.jpg',
+            image: '/public/images/home/a1a02d6c-282d-4a4f-9f42-e4eb0d330076.jpeg',
             description: 'Isu HIV masih menjadi perhatian utama Perkumpulan SuaR Indonesia dalam kerja membangun gerakan sosial.',
             content: `
                 <p class="mb-4">Gerakan masyarakat, populasi kunci WPSL maupun WPSTL adalah potensi besar masyarakat yang memberikan impact dan daya hasil luar biasa untuk mencapai tujuan besar nasional tahun 2030 dengan <strong>3 zero</strong>:</p>
@@ -49,7 +49,7 @@ export const layananData = {
             title: 'Program Kebencanaan',
             subtitle: 'Respon Tanggap Darurat dan Ketangguhan Masyarakat',
             icon: '🆘',
-            image: 'https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=800,fit=crop/YZ9b16O2aksMXqwd/whatsapp-image-2024-09-26-at-4.07.06-pm-dJo6V6ky7WfVJbnJ.jpeg',
+            image: '/public/images/home/ef6b8ce2-1476-4441-ad78-d8d880dfa0c5.jpg',
             description: 'Merespon aksi tanggap darurat bencana untuk memenuhi kebutuhan dasar kelompok rentan di pengungsian.',
             highlights: [
                 'Menggalang jejaring kemanusiaan nasional dan lokal untuk advokasi kebijakan',
@@ -70,7 +70,7 @@ export const layananData = {
             title: 'Program Pendidikan dan Pelatihan',
             subtitle: 'Peningkatan Kapasitas dan Pengorganisasian',
             icon: '📚',
-            image: 'https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=800,fit=crop/YZ9b16O2aksMXqwd/whatsapp-image-2024-09-26-at-2.52.56-pm-YNqyEnN3M2fe3q46.jpeg',
+            image: '/public/images/home/815794f5-6c53-4208-8413-745fb6c6577a.jpeg',
             description: 'SuaR Indonesia memiliki sumber daya manusia (SDM) yang terlatih sebagai pelatih/fasilitator nasional dan lokal.',
             programs: [
                 'Pelatihan perubahan perilaku',
@@ -87,7 +87,7 @@ export const layananData = {
             title: 'Program Penelitian',
             subtitle: 'Data untuk Kebijakan Sosial dan Kesehatan',
             icon: '🔬',
-            image: 'https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=800,fit=crop/YZ9b16O2aksMXqwd/whatsapp-image-2024-09-26-at-2.53.29-pm-m7VwLN5wplho2ObM.jpeg',
+            image: '/public/images/home/65293a91-5611-4783-bd0c-fe49c0d2c610.jpeg',
             description: 'Program Penelitian SuaR Indonesia berfokus pada pengumpulan, analisis, dan diseminasi data yang relevan.',
             focus: [
                 'Pengembangan kebijakan berbasis bukti',
@@ -102,7 +102,7 @@ export const layananData = {
             title: 'Program Perlindungan Perempuan & Anak',
             subtitle: 'Layanan Inklusi dan Lingkungan Ramah Anak',
             icon: '👶',
-            image: 'https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=800,fit=crop/YZ9b16O2aksMXqwd/whatsapp-image-2024-09-26-at-4.12.26-pm-mk3zjzOwQvFBb4B9.jpeg',
+            image: '/public/images/home/ab6d5920-606b-4f19-aa46-68ccfb1eae33.jpeg',
             description: 'Upaya komprehensif untuk memberikan dukungan program pemenuhan hak-hak anak dan perempuan.',
             issues: [
                 'Pencegahan kekerasan pada anak',
@@ -119,7 +119,7 @@ export const layananData = {
             title: 'Program Magang',
             subtitle: 'Pembelajaran Terbaik untuk Pembuat Kebijakan',
             icon: '🎓',
-            image: 'https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=800,fit=crop/YZ9b16O2aksMXqwd/magang-suar-1-AzG7b5338zfowBeO.PNG',
+            image: '/public/images/home/24602b52-5b49-40a8-99a9-52df012dd8e5.jpeg',
             description: 'SuaR Indonesia berkomitmen memberikan layanan kepada masyarakat dan pemangku kepentingan untuk memenuhi hak-hak kelompok marginal.',
             quote: 'Mewujudkan perempuan, anak dan masyarakat marginal yang berdaya, sehat dan bermartabat',
             facilities: {

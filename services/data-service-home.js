@@ -18,7 +18,7 @@ export const homeData = {
         {
             title: "PROGRAM HIV/AIDS PADA KELOMPOK RENTAN",
             description: "Advokasi kesehatan, psikis, dan sosial penderita",
-            image: "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=800,fit=crop/YZ9b16O2aksMXqwd/whatsapp-image-2024-10-07-at-14.19.09_5bc81605-YX4yLrOKqNS6Prly.jpg",
+            image: "/public/images/home/a1a02d6c-282d-4a4f-9f42-e4eb0d330076.jpeg",
             link: "/layanan#hiv-aids"
         },
         {
@@ -36,19 +36,19 @@ export const homeData = {
         {
             title: "PROGRAM PENELITIAN",
             description: "Suar berkomitmen mengabdikan diri kepada masyarakat melalui riset terkait.",
-            image: "/public/images/home/815794f5-6c53-4208-8413-745fb6c6577a.jpeg",
+            image: "/public/images/home/65293a91-5611-4783-bd0c-fe49c0d2c610.jpeg",
             link: "/layanan#penelitian"
         },
         {
             title: "PROGRAM PERLINDUNGAN ANAK",
             description: "Menciptakan lingkungan yang aman bagi anak - anak",
-            image: "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=800,fit=crop/YZ9b16O2aksMXqwd/whatsapp-image-2024-09-26-at-4.12.26-pm-mk3zjzOwQvFBb4B9.jpeg",
+            image: "/public/images/home/ab6d5920-606b-4f19-aa46-68ccfb1eae33.jpeg",
             link: "/layanan#perlindungan-anak"
         },
         {
             title: "PROGRAM MAGANG",
             description: "Mewujudkan perempuan, anak dan masyarakat marginal yang berdaya, sehat dan bermartabat",
-            image: "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=800,fit=crop/YZ9b16O2aksMXqwd/magang-suar-1-AzG7b5338zfowBeO.PNG",
+            image: "/public/images/home/24602b52-5b49-40a8-99a9-52df012dd8e5.jpeg",
             link: "/layanan#magang"
         }
     ],

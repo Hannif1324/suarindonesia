@@ -4,16 +4,19 @@
  */
 
 import { DOM } from '../../utils/helpers.js';
-import { staffData } from '../../services/data-service-staff.js';
+import { StaffService } from '../../services/data-service-staff.js';
 import { logger } from '../../debugs/logger.js';
 
 export class StaffPage {
     constructor() {
-        this.data = staffData;
+        this.data = null;
     }
 
     async render() {
         logger.info('Rendering staff page');
+
+        // Fetch data before rendering
+        this.data = await StaffService.getData();
 
         const container = DOM.create('div', {
             className: 'fade-in'
@@ -108,7 +111,7 @@ export class StaffPage {
         return `
             <div class="group relative bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-2">
                 <!-- Image Container with Gradient Overlay -->
-                <div class="relative ${isManagement ? 'h-80' : 'h-64'} overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100">
+                <div class="relative w-full aspect-[3/4] overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100">
                     <img 
                         src="${member.image}" 
                         alt="${member.name}"

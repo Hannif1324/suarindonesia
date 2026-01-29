@@ -113,6 +113,12 @@ export class ArticleDetailTemplate {
     }
 
     renderContent(article) {
+        // 1. Definisikan variabel URL dan Judul untuk Link Share
+        const currentUrl = encodeURIComponent(window.location.href); 
+        const shareTitle = encodeURIComponent(`Baca artikel menarik ini: ${article.title}`);
+        const shareWa = `https://api.whatsapp.com/send?text=${shareTitle}%20${currentUrl}`;
+        const shareFb = `https://www.facebook.com/sharer/sharer.php?u=${currentUrl}`;
+        const shareTw = `https://twitter.com/intent/tweet?text=${shareTitle}&url=${currentUrl}`;
         const section = DOM.create('section', {
             className: 'py-12 md:py-16'
         });
@@ -184,15 +190,39 @@ export class ArticleDetailTemplate {
                         </div>
                     ` : ''}
 
-                    <!-- Share (Placeholder) -->
-                    <div class="flex items-center justify-between">
+                    <!-- Share Section -->
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-6 border-t border-gray-100 mt-8">
                         <span class="font-medium text-gray-900">Bagikan artikel ini:</span>
                         <div class="flex gap-2">
-                            <button class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:opacity-90 transition">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg>
-                            </button>
-                            <button class="w-10 h-10 rounded-full bg-blue-800 text-white flex items-center justify-center hover:opacity-90 transition">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+                            <!-- WhatsApp -->
+                            <a href="${shareWa}" 
+                            target="_blank" rel="noopener noreferrer"
+                            class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center hover:opacity-90 transition shadow-sm"
+                            title="Share ke WhatsApp">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-8.683-2.031-9.672-.272-.248-.47-.372-.644-.372-.174 0-.371 0-.569.001h-.005c-.247.01-1.569.049-1.891.396-.322.347-1.238 1.213-1.238 2.962 0 1.748 1.288 3.447 1.461 3.696.173.247 2.502 3.858 6.075 5.433 3.57 1.579 3.57 1.054 4.212.982.643-.075 1.759-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                            </a>
+
+                            <!-- Facebook -->
+                            <a href="${shareFb}" 
+                            target="_blank" rel="noopener noreferrer"
+                            class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:opacity-90 transition shadow-sm"
+                            title="Share ke Facebook">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                            </a>
+
+                            <!-- Twitter / X -->
+                            <a href="${shareTw}" 
+                            target="_blank" rel="noopener noreferrer"
+                            class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:opacity-90 transition shadow-sm"
+                            title="Share ke Twitter/X">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                            </a>
+
+                            <!-- Copy Link (Untuk Instagram/Lainnya) -->
+                            <button id="copy-link-btn" 
+                            class="w-10 h-10 rounded-full bg-gray-600 text-white flex items-center justify-center hover:opacity-90 transition shadow-sm"
+                            title="Salin Link">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                             </button>
                         </div>
                     </div>
@@ -200,7 +230,45 @@ export class ArticleDetailTemplate {
             </div>
         `;
 
+        // Add Event Listener for Copy Button with Custom Toast
+        const copyBtn = section.querySelector('#copy-link-btn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(window.location.href);
+                this.showToast('Tautan artikel berhasil disalin!');
+            });
+        }
+
         return section;
+    }
+
+    showToast(message) {
+        // Create toast element
+        const toast = DOM.create('div', {
+            className: 'fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-dark text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3 z-50 opacity-0 transition-opacity duration-300'
+        });
+
+        toast.innerHTML = `
+            <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="font-medium text-sm">${message}</span>
+        `;
+
+        document.body.appendChild(toast);
+
+        // Animate in
+        requestAnimationFrame(() => {
+            toast.classList.remove('opacity-0');
+        });
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            toast.classList.add('opacity-0');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 3000);
     }
 
     async renderRelated(currentArticle) {

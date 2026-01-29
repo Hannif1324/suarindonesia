@@ -68,7 +68,7 @@ export class LayananPage {
         section.innerHTML = `
             <div class="absolute inset-0 z-0">
                 <img 
-                    src="https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=1920,fit=crop/YZ9b16O2aksMXqwd/whatsapp-image-2024-09-26-at-4.07.06-pm-dJo6V6ky7WfVJbnJ.jpeg" 
+                    src="/public/images/home/d8be2edf-1e8e-4191-a782-8bc687f5fd66.jpeg" 
                     alt="Layanan Background" 
                     class="w-full h-full object-cover"
                 >

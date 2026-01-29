@@ -13,7 +13,7 @@ export class ProdukPage {
             hero: {
                 title: "Produk Unggulan Komunitas",
                 subtitle: "Dukung kemandirian ekonomi masyarakat melalui produk-produk berkualitas hasil karya komunitas binaan SuaR Indonesia.",
-                backgroundImage: "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=768,h=507,fit=crop/YZ9b16O2aksMXqwd/whatsapp-image-2025-09-20-at-1.05.35-pm-m7VDkB63V9hryMqo.jpeg",
+                backgroundImage: "/public/images/product/b7daa493-98f2-4bf4-8e21-6456a89ca186.jpeg",
                 ctaText: "Lihat Produk",
                 ctaLink: "#daftar-produk"
             },

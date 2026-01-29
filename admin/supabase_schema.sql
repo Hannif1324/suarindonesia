@@ -83,6 +83,21 @@ create table if not exists contact_submissions (
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- STAFF TABLE
+-- Table untuk menyimpan data staff/anggota organisasi
+create table if not exists staff (
+  id uuid default uuid_generate_v4() primary key,            -- ID unik menggunakan UUID
+  name text not null,                                         -- Nama lengkap staff (wajib)
+  role text not null,                                         -- Jabatan/posisi staff (wajib)
+  image text not null,                                        -- URL foto staff (wajib)
+  location text not null default 'Kediri',                    -- Lokasi kerja: Kediri atau Jember
+  image_position text default 'top',                          -- Posisi foto: 'top' atau 'center'
+  staff_type text not null default 'staff'                    -- Tipe: 'management' atau 'staff'
+    check (staff_type in ('management', 'staff')),            -- Validasi tipe yang diizinkan
+  display_order integer default 0,                            -- Urutan tampilan (0 = default)
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null  -- Waktu dibuat
+);
+
 -- ENABLE ROW LEVEL SECURITY
 alter table articles enable row level security;
 alter table activities enable row level security;
@@ -90,6 +105,7 @@ alter table products enable row level security;
 alter table photo_gallery enable row level security;
 alter table videos enable row level security;
 alter table contact_submissions enable row level security;
+alter table staff enable row level security;
 
 -- POLICIES (Drop first to avoid "policy already exists" errors)
 
@@ -171,6 +187,23 @@ create policy "Only authenticated users can update contact submissions" on conta
 drop policy if exists "Only authenticated users can delete contact submissions" on contact_submissions;
 create policy "Only authenticated users can delete contact submissions" on contact_submissions for delete using ( auth.role() = 'authenticated' );
 
+-- Staff
+-- Policy: Semua orang bisa melihat daftar staff (public)
+drop policy if exists "Public Staff are viewable by everyone" on staff;
+create policy "Public Staff are viewable by everyone" on staff for select using ( true );
+
+-- Policy: Hanya user yang sudah login bisa menambah staff baru
+drop policy if exists "Users can insert staff" on staff;
+create policy "Users can insert staff" on staff for insert with check ( auth.role() = 'authenticated' );
+
+-- Policy: Hanya user yang sudah login bisa mengupdate data staff
+drop policy if exists "Users can update staff" on staff;
+create policy "Users can update staff" on staff for update using ( auth.role() = 'authenticated' );
+
+-- Policy: Hanya user yang sudah login bisa menghapus staff
+drop policy if exists "Users can delete staff" on staff;
+create policy "Users can delete staff" on staff for delete using ( auth.role() = 'authenticated' );
+
 -- Create indexes (if not exists)
 create index if not exists idx_photo_gallery_category on photo_gallery(category);
 create index if not exists idx_photo_gallery_created_at on photo_gallery(created_at desc);
@@ -178,12 +211,17 @@ create index if not exists idx_photo_gallery_activity_id on photo_gallery(activi
 create index if not exists idx_videos_created_at on videos(created_at desc);
 create index if not exists idx_videos_activity_id on videos(activity_id);
 
+-- Index untuk staff: mempercepat query berdasarkan tipe dan urutan
+create index if not exists idx_staff_type on staff(staff_type);
+create index if not exists idx_staff_display_order on staff(display_order);
+
 -- STORAGE BUCKETS SETUP
 insert into storage.buckets (id, name, public)
 values 
   ('photo-gallery-images', 'photo-gallery-images', true),
   ('video-thumbnails', 'video-thumbnails', true),
-  ('activity-images', 'activity-images', true)
+  ('activity-images', 'activity-images', true),
+  ('staff-images', 'staff-images', true)  -- Bucket untuk foto staff
 on conflict (id) do nothing;
 
 -- Storage Policies (Drop first)
@@ -226,3 +264,20 @@ create policy "Authenticated Update Activity Images" on storage.objects for upda
 
 drop policy if exists "Authenticated Delete Activity Images" on storage.objects;
 create policy "Authenticated Delete Activity Images" on storage.objects for delete using ( bucket_id = 'activity-images' and auth.role() = 'authenticated' );
+
+-- staff-images
+-- Policy: Semua orang bisa melihat foto staff
+drop policy if exists "Public Access Staff Images" on storage.objects;
+create policy "Public Access Staff Images" on storage.objects for select using ( bucket_id = 'staff-images' );
+
+-- Policy: Hanya user authenticated yang bisa upload foto staff
+drop policy if exists "Authenticated Upload Staff Images" on storage.objects;
+create policy "Authenticated Upload Staff Images" on storage.objects for insert with check ( bucket_id = 'staff-images' and auth.role() = 'authenticated' );
+
+-- Policy: Hanya user authenticated yang bisa update foto staff
+drop policy if exists "Authenticated Update Staff Images" on storage.objects;
+create policy "Authenticated Update Staff Images" on storage.objects for update using ( bucket_id = 'staff-images' and auth.role() = 'authenticated' );
+
+-- Policy: Hanya user authenticated yang bisa hapus foto staff
+drop policy if exists "Authenticated Delete Staff Images" on storage.objects;
+create policy "Authenticated Delete Staff Images" on storage.objects for delete using ( bucket_id = 'staff-images' and auth.role() = 'authenticated' );

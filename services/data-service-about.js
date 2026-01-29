@@ -40,7 +40,7 @@ export const aboutData = {
     visi: {
         title: "VISI",
         content: "Visi Perkumpulan SUAR Indonesia adalah: Lembaga yang mandiri untuk mewujudkan perempuan, anak dan masyarakat marjinal yang berdaya, sehat dan bermartabat",
-        image: "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=768,h=390,fit=crop/YZ9b16O2aksMXqwd/3m-AzGev3qrKNU6yN76.jpg"
+        image: "/public/images/about/Gemini_Generated_Image_6xz2mn6xz2mn6xz2.png"
     },
 
     misi: {
@@ -51,7 +51,7 @@ export const aboutData = {
             "Mempengaruhi kebijakan-kebijakan agar menghormati, melindungi dan memenuhi hak-hak perempuan, anak dan masyarakat marjinal melalui penelitian dan advokasi",
             "Lembaga Penelitian untuk advokasi berbasis bukti"
         ],
-        image: "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=768,h=358,fit=crop/YZ9b16O2aksMXqwd/1m-AzGev3qOV9FLQwD2.jpg"
+        image: "/public/images/about/24623847239879295misi.png"
     },
 
     program: {
@@ -104,12 +104,12 @@ export const aboutData = {
 
     legalitas: {
         title: "LEGALITAS",
-        image: "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=375,h=366,fit=crop/YZ9b16O2aksMXqwd/suar-ALpoRaLjVRi6Bwb1.jpg"
+        image: "/public/images/about/Screenshot from 2026-01-29 17-28-51.png"
     },
 
     petaHotspot: {
         title: "PETA HOTSPOT",
-        image: "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=375,h=254,fit=crop/YZ9b16O2aksMXqwd/denaha-Yleyw1DeO0iablzm.png"
+        image: "/public/images/about/Screenshot from 2026-01-29 17-28-58.png"
     },
 
     isuStrategis: {
@@ -204,21 +204,21 @@ export const aboutData = {
             id: "kepemimpinan-perempuan",
             title: "KEPEMIMPINAN PEREMPUAN",
             link: "/matrik/kepemimpinan-perempuan",
-            image: "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=1080,fit=crop/YZ9b16O2aksMXqwd/1m-AzGev3qOV9FLQwD2.jpg",
+            image: "/public/images/matrik/Screenshot from 2026-01-29 17-32-28.png",
             description: "Matrik strategi dan program untuk penguatan kepemimpinan perempuan."
         },
         {
             id: "kesehatan-reproduksi",
             title: "KESEHATAN REPRODUKSI REMAJA",
             link: "/matrik/kesehatan-reproduksi",
-            image: "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=1080,fit=crop/YZ9b16O2aksMXqwd/2m-A85wgEopP5soo7je.jpg",
+            image: "/public/images/matrik/Screenshot from 2026-01-29 17-32-42.png",
             description: "Matrik strategi dan program untuk kesehatan reproduksi remaja."
         },
         {
             id: "pola-penyelesaian",
             title: "POLA PENYELESAIAN",
             link: "/matrik/pola-penyelesaian",
-            image: "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=1080,fit=crop/YZ9b16O2aksMXqwd/3m-AzGev3qrKNU6yN76.jpg",
+            image: "/public/images/matrik/Screenshot from 2026-01-29 17-32-51.png",
             description: "Matrik pola penyelesaian masalah dan penanganan kasus."
         }
     ]

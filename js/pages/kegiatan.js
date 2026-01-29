@@ -14,7 +14,7 @@ export class KegiatanPage {
                 title: "Kegiatan SuaR Indonesia",
                 subtitle: "Rapat, Pertemuan, Sosialisasi, dan Program Pelatihan",
                 description: "Dokumentasi kegiatan dan program SuaR Indonesia dalam memberdayakan masyarakat",
-                image: "https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=1920,fit=crop/YZ9b16O2aksMXqwd/whatsapp-image-2024-09-09-at-12.34.44-YKbrRk0pQ5sbwzEn.jpeg"
+                image: "/public/images/kegiatan/ca8b51c5-e5a1-4069-9d86-59839d9337a2.jpeg"
             },
             categories: [
                 { id: 'semua', label: 'Semua Kegiatan', icon: '📋' },
