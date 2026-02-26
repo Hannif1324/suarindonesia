@@ -144,7 +144,7 @@ export class PopupModal {
             const indicators = document.createElement('div');
             Object.assign(indicators.style, {
                 position: 'absolute',
-                bottom: '12px',
+                bottom: '1px',
                 left: '50%',
                 transform: 'translateX(-50%)',
                 display: 'flex',
