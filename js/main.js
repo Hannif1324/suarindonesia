@@ -19,6 +19,8 @@ import { LayananPage } from './pages/layanan.js';
 import { KegiatanPage } from './pages/kegiatan.js';
 import { ProdukPage } from './pages/produk.js';
 import { DOM, hideLoading, showLoading } from '../utils/helpers.js';
+import { popupService } from './services/popup-service.js';
+import { PopupModal } from '../components/ui/popup-modal.js';
 
 class App {
     constructor() {
@@ -48,6 +50,9 @@ class App {
 
             // Initialize router
             router.init();
+
+            // Tag: Inisialisasi Popup Carousel
+            this.initPopup();
 
             hideLoading();
             logger.info('Application initialized successfully');
@@ -156,6 +161,27 @@ class App {
         });
 
         logger.info('Routes configured');
+    }
+
+    /**
+     * Initialize Popup Carousel
+     */
+    async initPopup() {
+        try {
+            // Tag: Mengambil data popup dari Supabase service
+            const popups = await popupService.getActivePopups();
+            
+            if (popups && popups.length > 0) {
+                logger.info('Showing active popups carousel');
+                // Tag: Merender modal jika ada data
+                const popupModal = new PopupModal(popups);
+                popupModal.render();
+            } else {
+                logger.info('No active popups found');
+            }
+        } catch (error) {
+            logger.error('Failed to initialize popup', error);
+        }
     }
 
     /**
