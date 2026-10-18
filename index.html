@@ -10,6 +10,9 @@
     <!-- Favicon / Logo Browser Tab -->
     <link rel="icon" type="image/webp" href="/public/suar_lg_98929874989.webp">
 
+    <!-- Preload Hero Poster for Instant Frame-0 Paint (Zero Blank Screen) -->
+    <link rel="preload" as="image" href="/public/hero-poster.webp" fetchpriority="high">
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -78,11 +81,11 @@
 <body class="bg-gray-light font-sans text-dark antialiased">
     <!-- App Root -->
     <div id="app">
-        <!-- Loading State -->
-        <div id="loading" class="flex items-center justify-center min-h-screen bg-white">
+        <!-- Loading State: Atmospheric Dark Tone Matching Hero Palette -->
+        <div id="loading" class="fixed inset-0 z-50 flex items-center justify-center bg-[#160e29] text-white transition-opacity duration-500">
             <div class="text-center">
-                <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mx-auto"></div>
-                <p class="mt-4 text-gray font-medium">Memuat...</p>
+                <div class="animate-spin rounded-full h-14 w-14 border-4 border-primary/20 border-t-primary mx-auto"></div>
+                <p class="mt-4 text-purple-200 text-sm font-medium tracking-wide">Memuat SuaR Indonesia...</p>
             </div>
         </div>
     </div>

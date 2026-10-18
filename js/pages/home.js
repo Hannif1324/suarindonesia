@@ -85,38 +85,54 @@ export class HomePage {
         });
 
         section.innerHTML = `
-            <!-- Video Background Layer -->
-            <div class="absolute inset-0 z-0">
+            <!-- ========================================== -->
+            <!-- 2-LAYER HERO BACKGROUND ARCHITECTURE       -->
+            <!-- ========================================== -->
+            <div class="absolute inset-0 z-0 overflow-hidden bg-[#160e29]">
+                <!-- LAYER 1: Instant Static Foundation (Frame 0 Poster Image) -->
+                <img 
+                    src="/public/hero-poster.webp" 
+                    alt="SuaR Indonesia Hero Backdrop" 
+                    class="absolute inset-0 w-full h-full object-cover hero-media z-0 select-none pointer-events-none"
+                    loading="eager"
+                    fetchpriority="high"
+                />
+
+                <!-- LAYER 2: Progressive Dynamic Video Layer (Smooth Cross-Fade) -->
                 <video 
+                    id="hero-bg-video"
                     autoplay 
                     loop 
                     muted 
                     playsinline
-                    class="w-full h-full object-cover hero-video"
+                    poster="/public/hero-poster.webp"
+                    class="absolute inset-0 w-full h-full object-cover hero-media z-[1] opacity-0 transition-opacity duration-1000 ease-in-out"
                 >
+                    <source src="${this.data.hero.image}" type="video/webm">
                     <source src="${this.data.hero.image}" type="video/mp4">
                 </video>
-                <!-- Lighter overlay for better visibility -->
-                <div class="absolute inset-0 bg-gradient-to-r from-black/50 via-black/30 to-black/20"></div>
+
+                <!-- Lighter overlay for better visibility and typography contrast -->
+                <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-black/35 to-black/20 z-[2] pointer-events-none"></div>
             </div>
             
-            <!-- Responsive Video Position Styles -->
+            <!-- Responsive Video & Poster Position Styles -->
             <style>
                 /* Default: Desktop - center position */
-                .hero-video {
+                .hero-media, .hero-video {
                     object-position: center 10%;
                 }
                 
                 /* Tablet (768px and below) - show right side (head) */
                 @media (max-width: 768px) {
-                    .hero-video {
+                    .hero-media, .hero-video {
                         object-position: 75% center;
                     }
                 }
                 
                 /* Mobile (425px and below) - focus more on head */
                 @media (max-width: 425px) {
-                    .hero-video {
+                    .hero-media, .hero-video {
                         object-position: 80% center;
                     }
                 }
@@ -408,7 +424,40 @@ export class HomePage {
             </style>
         `;
 
+        // Mengaktifkan transisi mulus Cross-Fade saat video siap jalan
+        this.setupHeroVideoCrossFade(section);
+
         return section;
+    }
+
+    /**
+     * @description : Mengatur transisi Cross-Fade halus dari Layer 1 (Poster Statis) ke Layer 2 (Video Dinamis)
+     * @param       : {HTMLElement} section - Container section hero
+     * @return      : void
+     * @throws      : Tidak melempar exception
+     * @author      : Gemini Agent
+     * @modified    : 2026-10-18
+     */
+    setupHeroVideoCrossFade(section) {
+        const video = section.querySelector('#hero-bg-video');
+        if (!video) return;
+
+        let hasRevealed = false;
+        const reveal = () => {
+            if (hasRevealed) return;
+            hasRevealed = true;
+            video.classList.remove('opacity-0');
+            video.classList.add('opacity-100');
+        };
+
+        // Jika video sudah ter-buffer dan siap putar (misal dari memory/cache browser)
+        if (video.readyState >= 3) {
+            reveal();
+        } else {
+            video.addEventListener('canplay', reveal, { once: true });
+            video.addEventListener('playing', reveal, { once: true });
+            video.addEventListener('loadeddata', reveal, { once: true });
+        }
     }
 
     renderAbout() {

@@ -128,22 +128,31 @@ export function parseHTML(html) {
 }
 
 /**
- * Show loading state
+ * @description : Menampilkan overlay loading state
+ * @return      : void
+ * @author      : Gemini Agent
+ * @modified    : 2026-10-18
  */
 export function showLoading() {
     const loading = DOM.get('loading');
     if (loading) {
-        loading.classList.remove('hidden');
+        loading.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
     }
 }
 
 /**
- * Hide loading state
+ * @description : Menyembunyikan overlay loading state dengan transisi fade-out halus
+ * @return      : void
+ * @author      : Gemini Agent
+ * @modified    : 2026-10-18
  */
 export function hideLoading() {
     const loading = DOM.get('loading');
     if (loading) {
-        loading.classList.add('hidden');
+        loading.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => {
+            loading.classList.add('hidden');
+        }, 500);
     }
 }
 
