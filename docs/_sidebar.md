@@ -19,6 +19,7 @@ Part of     : Documentation Engine
   * [Log 002: Perbaikan Bug Tag Chip](logs/log-002-tag-chip-fix.md)
   * [Log 003: Remediasi Keamanan Strix](logs/log-003-security-remediation.md)
   * [Log 004: Arsitektur 2-Layer Hero Background](logs/log-004-two-layer-hero-architecture.md)
+  * [Log 005: Icon Design System UI/UX](logs/log-005-icon-design-system.md)
 
 * **Keamanan & Kepatuhan**
   * [Strix Security Audit Report](../strix-audit-suarindonesia/SECURITY_AUDIT_REPORT.md)
