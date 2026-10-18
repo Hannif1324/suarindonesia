@@ -6,6 +6,7 @@
 import { DOM } from '../../utils/helpers.js';
 import { supabase } from '../services/supabase-client.js';
 import { logger } from '../../debugs/logger.js';
+import { icon } from '../../components/ui/icons.js';
 
 export class ArticleDetailTemplate {
     constructor() {
@@ -153,8 +154,9 @@ export class ArticleDetailTemplate {
         if (article.video) {
             videoHTML = `
                 <div class="mt-12 pt-8 border-t border-gray-200">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-6 border-l-4 border-purple-600 pl-4">
-                        🎥 Video
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6 border-l-4 border-purple-600 pl-4 flex items-center gap-2.5">
+                        <span class="p-1.5 rounded-lg bg-purple-50 text-purple-600">${icon('video', 'w-5 h-5')}</span>
+                        <span>Video Dokumentasi</span>
                     </h3>
                     ${this.generateVideoHTML(article.video, '')}
                 </div>
@@ -481,8 +483,9 @@ export class ArticleDetailTemplate {
     renderImageGallery(gallery) {
         let html = `
             <div class="mt-12 pt-8 border-t border-gray-200">
-                <h3 class="text-2xl font-bold text-gray-900 mb-6 border-l-4 border-purple-600 pl-4">
-                    📸 Galeri Foto
+                <h3 class="text-2xl font-bold text-gray-900 mb-6 border-l-4 border-purple-600 pl-4 flex items-center gap-2.5">
+                    <span class="p-1.5 rounded-lg bg-purple-50 text-purple-600">${icon('camera', 'w-5 h-5')}</span>
+                    <span>Galeri Foto</span>
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         `;
@@ -517,7 +520,7 @@ export class ArticleDetailTemplate {
 
         container.innerHTML = `
             <div class="text-center">
-                <div class="text-6xl mb-4">😕</div>
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-500 shadow-xs">${icon('empty', 'w-10 h-10')}</div>
                 <h1 class="text-3xl font-bold text-gray-900 mb-2">Artikel Tidak Ditemukan</h1>
                 <p class="text-gray-600 mb-8">Maaf, artikel yang Anda cari tidak tersedia atau telah dihapus.</p>
                 <a href="#/berita" class="inline-block bg-purple-600 text-white font-semibold py-3 px-8 rounded-full hover:bg-purple-700 transition shadow-lg">

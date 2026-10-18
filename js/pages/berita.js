@@ -6,6 +6,7 @@
 import { DOM } from '../../utils/helpers.js';
 import { supabase } from '../services/supabase-client.js';
 import { logger } from '../../debugs/logger.js';
+import { icon } from '../../components/ui/icons.js';
 
 export class BeritaPage {
     constructor() {
@@ -130,7 +131,10 @@ export class BeritaPage {
         section.innerHTML = `
             <div class="container mx-auto px-4">
                 <div class="flex items-center justify-between mb-8">
-                    <h2 class="text-2xl font-bold text-gray-800">✨ Berita Unggulan</h2>
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2.5">
+                        <span class="p-1.5 rounded-lg bg-amber-50 text-amber-500">${icon('sparkles', 'w-5 h-5')}</span>
+                        <span>Berita Unggulan</span>
+                    </h2>
                     <div class="flex gap-2">
                         <button id="carousel-prev" class="p-2 rounded-full bg-white shadow hover:bg-purple-50 text-purple-600 transition">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
@@ -155,14 +159,14 @@ export class BeritaPage {
                                     
                                     <div class="absolute bottom-0 left-0 right-0 p-6 text-white transform transition-transform duration-300 group-hover:-translate-y-2">
                                         <span class="inline-block px-3 py-1 bg-purple-600 text-xs font-bold rounded-full mb-3 shadow-lg">
-                                            ${article.category.toUpperCase()}
+                                             ${article.category.toUpperCase()}
                                         </span>
                                         <h3 class="text-xl md:text-2xl font-bold leading-tight mb-2 line-clamp-2 group-hover:text-purple-300 transition-colors">
                                             ${article.title}
                                         </h3>
-                                        <div class="flex items-center gap-4 text-sm text-gray-300">
-                                            <span>📅 ${article.date}</span>
-                                            <span>⏱️ ${article.readTime}</span>
+                                        <div class="flex items-center gap-4 text-xs md:text-sm text-gray-300">
+                                            <span class="inline-flex items-center gap-1.5">${icon('calendar', 'w-4 h-4 text-gray-400')} <span>${article.date}</span></span>
+                                            <span class="inline-flex items-center gap-1.5">${icon('clock', 'w-4 h-4 text-gray-400')} <span>${article.readTime}</span></span>
                                         </div>
                                     </div>
                                 </div>

@@ -5,6 +5,7 @@
 import { DOM } from '../../utils/helpers.js';
 import { aboutData } from '../../services/data-service-about.js';
 import { logger } from '../../debugs/logger.js';
+import { icon } from '../../components/ui/icons.js';
 
 export class AboutPage {
     constructor() {
@@ -598,7 +599,7 @@ export class AboutPage {
                                 <img src="${this.data.petaHotspot.image}" alt="Peta Hotspot" class="w-full max-w-4xl mx-auto rounded-xl shadow-lg">
                                 <!-- Map overlay badge -->
                                 <div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-md">
-                                    <p class="text-sm font-semibold text-gray-700">📍 Peta Sebaran Hotspot</p>
+                                    <p class="text-sm font-semibold text-gray-700 inline-flex items-center gap-1.5">${icon('pin', 'w-4 h-4 text-purple-600')}<span>Peta Sebaran Hotspot</span></p>
                                 </div>
                             </div>
                         </div>

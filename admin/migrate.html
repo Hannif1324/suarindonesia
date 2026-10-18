@@ -18,7 +18,10 @@
     <div class="max-w-4xl mx-auto">
         <!-- Header -->
         <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">📦 Data Migration</h1>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+                <svg class="w-8 h-8 text-indigo-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                <span>Data Migration</span>
+            </h1>
             <p class="text-gray-600">Migrate data from static files to Supabase database</p>
         </div>
 
@@ -26,7 +29,10 @@
         <div class="space-y-4">
             <!-- Existing Migration (Berita, Kegiatan, Produk) -->
             <div class="bg-white rounded-lg shadow p-6 opacity-50">
-                <h2 class="text-xl font-bold text-gray-900 mb-3">📰 Articles, Activities & Products</h2>
+                <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2.5">
+                    <svg class="w-6 h-6 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M15 18h-5"></path><path d="M10 6h8v4h-8V6Z"></path></svg>
+                    <span>Articles, Activities & Products</span>
+                </h2>
                 <p class="text-gray-600 mb-4">Migrate Berita, Kegiatan, and Produk data to Supabase</p>
                 <button id="migrateBtn" disabled
                     class="bg-gray-400 text-white px-6 py-3 rounded-lg cursor-not-allowed font-semibold transition">
@@ -36,7 +42,10 @@
 
             <!-- Photo Gallery Migration -->
             <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-bold text-gray-900 mb-3">📸 Photo Gallery</h2>
+                <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2.5">
+                    <svg class="w-6 h-6 text-indigo-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    <span>Photo Gallery</span>
+                </h2>
                 <p class="text-gray-600 mb-2">Migrate photo gallery data to Supabase</p>
                 <p class="text-sm text-gray-500 mb-4" id="photo-count">8 photos ready to migrate</p>
                 <button id="migrate-photos-btn"
@@ -47,7 +56,10 @@
 
             <!-- Videos Migration -->
             <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-bold text-gray-900 mb-3">🎥 Videos</h2>
+                <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2.5">
+                    <svg class="w-6 h-6 text-purple-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                    <span>Videos</span>
+                </h2>
                 <p class="text-gray-600 mb-2">Migrate videos data to Supabase</p>
                 <p class="text-sm text-gray-500 mb-4" id="video-count">3 videos ready to migrate</p>
                 <button id="migrate-videos-btn"
@@ -58,7 +70,10 @@
 
             <!-- Staff Migration -->
             <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-bold text-gray-900 mb-3">👥 Staff & Management</h2>
+                <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2.5">
+                    <svg class="w-6 h-6 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <span>Staff & Management</span>
+                </h2>
                 <p class="text-gray-600 mb-2">Migrate staff data to Supabase</p>
                 <p class="text-sm text-gray-500 mb-4" id="staff-count">14 staff members ready to migrate</p>
                 <button id="migrate-staff-btn"
@@ -69,7 +84,10 @@
 
             <!-- Migrate All -->
             <div class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg shadow-lg p-6 text-white">
-                <h2 class="text-xl font-bold mb-3">🚀 Migrate All Data</h2>
+                <h2 class="text-xl font-bold mb-3 flex items-center gap-2.5">
+                    <svg class="w-6 h-6 text-white flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path></svg>
+                    <span>Migrate All Data</span>
+                </h2>
                 <p class="mb-4 opacity-90">Migrate photos, videos, and staff in one go</p>
                 <button id="migrate-all-btn"
                     class="bg-white text-green-700 px-8 py-3 rounded-lg hover:bg-gray-100 font-bold transition">
@@ -565,11 +583,11 @@
                 const photoCount = result.results.photoGallery.count || 0;
                 const videoCount = result.results.videos.count || 0;
                 const staffCount = result.results.staff.count || 0;
-                addLog(`✅ Migration Complete! Photos: ${photoCount}, Videos: ${videoCount}, Staff: ${staffCount}`, 'success');
-                alert(`✅ Migration completed successfully!\n\n📸 Photos: ${photoCount}\n🎥 Videos: ${videoCount}\n👥 Staff: ${staffCount}`);
+                addLog(`[SUCCESS] Migration Complete! Photos: ${photoCount}, Videos: ${videoCount}, Staff: ${staffCount}`, 'success');
+                alert(`Migration completed successfully!\n\nPhotos: ${photoCount}\nVideos: ${videoCount}\nStaff: ${staffCount}`);
             } else {
-                addLog(`❌ Migration failed. Check logs for details.`, 'error');
-                alert('❌ Migration failed. Check the logs for details.');
+                addLog(`[ERROR] Migration failed. Check logs for details.`, 'error');
+                alert('Migration failed. Check the logs for details.');
             }
         });
     </script>

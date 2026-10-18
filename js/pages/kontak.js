@@ -5,6 +5,7 @@
 import { DOM } from '../../utils/helpers.js';
 import { logger } from '../../debugs/logger.js';
 import { supabase } from '../services/supabase-client.js';
+import { icon } from '../../components/ui/icons.js';
 
 export class KontakPage {
     async render() {
@@ -43,7 +44,10 @@ export class KontakPage {
                             
                             <div class="space-y-6">
                                 <div>
-                                    <h3 class="font-bold text-primary mb-2">📍 Kantor Kediri</h3>
+                                    <h3 class="font-bold text-primary mb-2 flex items-center gap-2">
+                                        <span class="p-1 rounded-md bg-purple-50 text-purple-600">${icon('pin', 'w-4 h-4')}</span>
+                                        <span>Kantor Kediri</span>
+                                    </h3>
                                     <p class="text-gray-600">
                                         Pondok Doko Indah Blok A No. 1<br>
                                         Doko, Ngasem<br>
@@ -52,7 +56,10 @@ export class KontakPage {
                                 </div>
 
                                 <div>
-                                    <h3 class="font-bold text-primary mb-2">📍 Kantor Jember</h3>
+                                    <h3 class="font-bold text-primary mb-2 flex items-center gap-2">
+                                        <span class="p-1 rounded-md bg-purple-50 text-purple-600">${icon('pin', 'w-4 h-4')}</span>
+                                        <span>Kantor Jember</span>
+                                    </h3>
                                     <p class="text-gray-600">
                                         Jalan Suren Dampar RT 002 RW 002<br>
                                         Desa Suren, Ledokombo<br>
@@ -61,12 +68,18 @@ export class KontakPage {
                                 </div>
 
                                 <div>
-                                    <h3 class="font-bold text-primary mb-2">📧 Email</h3>
+                                    <h3 class="font-bold text-primary mb-2 flex items-center gap-2">
+                                        <span class="p-1 rounded-md bg-purple-50 text-purple-600">${icon('mail', 'w-4 h-4')}</span>
+                                        <span>Email</span>
+                                    </h3>
                                     <p class="text-gray-600">info@suarindonesia.org</p>
                                 </div>
 
                                 <div>
-                                    <h3 class="font-bold text-primary mb-2">📱 Media Sosial</h3>
+                                    <h3 class="font-bold text-primary mb-2 flex items-center gap-2">
+                                        <span class="p-1 rounded-md bg-purple-50 text-purple-600">${icon('smartphone', 'w-4 h-4')}</span>
+                                        <span>Media Sosial</span>
+                                    </h3>
                                     <div class="flex gap-4 mt-2">
                                         <a href="https://www.facebook.com/suar.06" target="_blank" class="text-gray-600 hover:text-primary transition">
                                             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">

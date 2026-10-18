@@ -6,6 +6,7 @@
 import { DOM } from '../../utils/helpers.js';
 import { layananData } from '../../services/data-service-layanan.js';
 import { logger } from '../../debugs/logger.js';
+import { icon } from '../../components/ui/icons.js';
 
 export class LayananPage {
     constructor() {
@@ -498,8 +499,8 @@ export class LayananPage {
             <div class="container mx-auto px-4 relative z-10">
                 <div class="max-w-6xl mx-auto">
                     <div class="text-center mb-16">
-                        <div class="inline-block p-4 rounded-full bg-white/10 backdrop-blur-md mb-6 shadow-lg border border-white/20 animate-float">
-                            <span class="text-5xl block">${service.icon}</span>
+                        <div class="inline-flex items-center justify-center p-5 rounded-2xl bg-white/10 backdrop-blur-md mb-6 shadow-xl border border-white/20 animate-float text-white">
+                            ${icon(service.icon, 'w-12 h-12 text-white')}
                         </div>
                         <h2 class="text-4xl md:text-5xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-purple-200">
                             ${service.title}
@@ -510,8 +511,8 @@ export class LayananPage {
                     <div class="grid md:grid-cols-2 gap-8 mb-12">
                         <div class="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:bg-white/15 transition-colors duration-300 group">
                             <h4 class="text-2xl font-bold mb-6 flex items-center gap-3 text-purple-200">
-                                <span class="p-2 bg-purple-500/20 rounded-lg group-hover:bg-purple-500/30 transition-colors">📋</span> 
-                                Workshop Kelembagaan
+                                <span class="p-2.5 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors inline-flex items-center justify-center">${icon('clipboard', 'w-6 h-6 text-purple-200')}</span> 
+                                <span>Workshop Kelembagaan</span>
                             </h4>
                             <ul class="space-y-4">
                                 ${service.facilities.workshop.map(item => `
@@ -527,8 +528,8 @@ export class LayananPage {
 
                         <div class="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/10 hover:bg-white/15 transition-colors duration-300 group">
                             <h4 class="text-2xl font-bold mb-6 flex items-center gap-3 text-pink-200">
-                                <span class="p-2 bg-pink-500/20 rounded-lg group-hover:bg-pink-500/30 transition-colors">🌾</span> 
-                                Pendampingan Lapang
+                                <span class="p-2.5 bg-pink-500/20 rounded-xl group-hover:bg-pink-500/30 transition-colors inline-flex items-center justify-center">${icon('leaf', 'w-6 h-6 text-pink-200')}</span> 
+                                <span>Pendampingan Lapang</span>
                             </h4>
                             <ul class="space-y-4">
                                 ${service.facilities.fieldAssistance.map(item => `
@@ -559,8 +560,8 @@ export class LayananPage {
     renderServiceHeader(service) {
         return `
             <div class="text-center mb-16">
-                <div class="inline-block p-4 rounded-full bg-white shadow-lg mb-6 animate-bounce-slow">
-                    <span class="text-5xl block">${service.icon}</span>
+                <div class="inline-flex items-center justify-center p-5 rounded-2xl bg-white shadow-xl mb-6 animate-bounce-slow text-purple-600 border border-purple-100">
+                    ${icon(service.icon, 'w-12 h-12 text-purple-600')}
                 </div>
                 <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
                     ${service.title}

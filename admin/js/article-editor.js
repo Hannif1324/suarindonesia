@@ -8,6 +8,7 @@ import { supabase } from '../../js/services/supabase-client.js';
 import { ImageUploader } from './image-uploader.js';
 import { VideoUploader } from './video-uploader.js';
 import { CustomDialog } from './custom-dialog.js';
+import { icon } from '../../components/ui/icons.js';
 
 export class ArticleEditor {
     /**
@@ -244,9 +245,9 @@ export class ArticleEditor {
                         ${article ? 'Edit Konten Liputan' : 'Tulis Konten Baru'}
                     </span>
                     <div class="hidden lg:flex items-center gap-2 text-xs text-gray-500 bg-amber-50/80 border border-amber-200/60 text-amber-800 px-3 py-1 rounded-full font-medium ml-2">
-                        <span id="stat-word-count">📄 0 kata</span>
+                        <span id="stat-word-count" class="inline-flex items-center gap-1">${icon('file-text', 'w-3.5 h-3.5')} <span>0 kata</span></span>
                         <span>•</span>
-                        <span id="stat-read-time">⏱ ~1 mnt baca</span>
+                        <span id="stat-read-time" class="inline-flex items-center gap-1">${icon('clock', 'w-3.5 h-3.5')} <span>~1 mnt baca</span></span>
                     </div>
                 </div>
 
@@ -318,13 +319,13 @@ export class ArticleEditor {
                             <!-- Mode Switcher: Edit | Bagi | Lihat -->
                             <div class="inline-flex rounded-lg border border-gray-300 bg-white p-0.5 text-xs font-medium">
                                 <button type="button" class="mode-tab-btn px-3 py-1 rounded-md transition ${this.editorMode === 'edit' ? 'bg-gray-900 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'}" data-mode="edit">
-                                    ✏️ Edit
+                                    <span class="inline-flex items-center gap-1.5">${icon('edit', 'w-3.5 h-3.5')} <span>Edit</span></span>
                                 </button>
                                 <button type="button" class="mode-tab-btn px-3 py-1 rounded-md transition ${this.editorMode === 'split' ? 'bg-gray-900 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'}" data-mode="split">
-                                    [] Bagi
+                                    <span class="inline-flex items-center gap-1.5">${icon('book-open', 'w-3.5 h-3.5')} <span>Bagi</span></span>
                                 </button>
                                 <button type="button" class="mode-tab-btn px-3 py-1 rounded-md transition ${this.editorMode === 'preview' ? 'bg-gray-900 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'}" data-mode="preview">
-                                    👁 Lihat
+                                    <span class="inline-flex items-center gap-1.5">${icon('eye', 'w-3.5 h-3.5')} <span>Lihat</span></span>
                                 </button>
                             </div>
                         </div>
@@ -343,11 +344,11 @@ export class ArticleEditor {
                             <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="ol" title="Daftar Angka">1≡</button>
                             <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100 font-serif" data-action="quote" title="Kutipan Narasumber">“”</button>
                             <div class="h-4 w-px bg-gray-200 mx-1"></div>
-                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="link" title="Tautan Link">🔗</button>
-                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="image" title="Sisipkan Gambar">📷</button>
-                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="video" title="Sisipkan Video Embed">📹</button>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="link" title="Tautan Link">${icon('link', 'w-4 h-4 text-gray-600')}</button>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="image" title="Sisipkan Gambar">${icon('camera', 'w-4 h-4 text-gray-600')}</button>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="video" title="Sisipkan Video Embed">${icon('video', 'w-4 h-4 text-gray-600')}</button>
                             <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="hr" title="Garis Pembatas">—</button>
-                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100 text-xs font-mono" data-action="dateline" title="Dateline Berita (KEDIRI, SuaR —)">📍</button>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100 text-xs font-mono" data-action="dateline" title="Dateline Berita (KEDIRI, SuaR —)">${icon('pin', 'w-4 h-4 text-gray-600')}</button>
                         </div>
 
                         <!-- Editor Textarea & Live Preview Body -->
@@ -379,13 +380,13 @@ export class ArticleEditor {
                     <!-- Segmented Control Tabs Header -->
                     <div class="bg-gray-100 p-1 rounded-2xl flex items-center justify-between text-xs font-semibold text-gray-600">
                         <button type="button" class="sidebar-tab-trigger flex-1 py-2 rounded-xl transition ${this.activeSidebarTab === 'metadata' ? 'bg-gray-900 text-white shadow' : 'hover:text-gray-900'}" data-tab="metadata">
-                            ⚡ Metadata
+                            <span class="inline-flex items-center justify-center gap-1.5">${icon('bolt', 'w-3.5 h-3.5')} <span>Metadata</span></span>
                         </button>
                         <button type="button" class="sidebar-tab-trigger flex-1 py-2 rounded-xl transition ${this.activeSidebarTab === 'distribution' ? 'bg-gray-900 text-white shadow' : 'hover:text-gray-900'}" data-tab="distribution">
-                            📡 Distribusi
+                            <span class="inline-flex items-center justify-center gap-1.5">${icon('broadcast', 'w-3.5 h-3.5')} <span>Distribusi</span></span>
                         </button>
                         <button type="button" class="sidebar-tab-trigger flex-1 py-2 rounded-xl transition ${this.activeSidebarTab === 'seo' ? 'bg-gray-900 text-white shadow' : 'hover:text-gray-900'}" data-tab="seo">
-                            🔍 SEO Google
+                            <span class="inline-flex items-center justify-center gap-1.5">${icon('search', 'w-3.5 h-3.5')} <span>SEO Google</span></span>
                         </button>
                     </div>
 
@@ -393,7 +394,7 @@ export class ArticleEditor {
                     <div id="tab-content-metadata" class="sidebar-tab-content bg-white rounded-2xl border border-gray-200/90 shadow-sm p-5 space-y-5">
                         
                         <div class="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase tracking-wider pb-2 border-b border-gray-100">
-                            <span>⚙️ Kategori & Foto Sampul</span>
+                            <span class="inline-flex items-center gap-1.5">${icon('settings', 'w-4 h-4 text-gray-500')} <span>Kategori & Foto Sampul</span></span>
                         </div>
 
                         <!-- Kanal & Kategori -->
@@ -438,7 +439,7 @@ export class ArticleEditor {
                                     ${this.tags.map((tag, idx) => `
                                         <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-900 text-white shadow-xs">
                                             #${tag}
-                                            <button type="button" class="remove-tag-btn hover:text-red-300 transition" data-index="${idx}">✕</button>
+                                            <button type="button" class="remove-tag-btn hover:text-red-300 transition flex items-center ml-0.5" data-index="${idx}" aria-label="Hapus tag">${icon('x', 'w-3 h-3')}</button>
                                         </span>
                                     `).join('')}
                                 </div>
@@ -475,7 +476,7 @@ export class ArticleEditor {
                     <!-- TAB 2: DISTRIBUSI -->
                     <div id="tab-content-distribution" class="sidebar-tab-content hidden bg-white rounded-2xl border border-gray-200/90 shadow-sm p-5 space-y-4">
                         <div class="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase tracking-wider pb-2 border-b border-gray-100">
-                            <span>📡 Kanal Distribusi & Sindikasi</span>
+                            <span class="inline-flex items-center gap-1.5">${icon('broadcast', 'w-4 h-4 text-gray-500')} <span>Kanal Distribusi & Sindikasi</span></span>
                         </div>
                         <div class="space-y-3 text-sm text-gray-700">
                             <label class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer hover:bg-gray-100/70">
@@ -498,7 +499,7 @@ export class ArticleEditor {
                     <!-- TAB 3: SEO GOOGLE -->
                     <div id="tab-content-seo" class="sidebar-tab-content hidden bg-white rounded-2xl border border-gray-200/90 shadow-sm p-5 space-y-4">
                         <div class="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase tracking-wider pb-2 border-b border-gray-100">
-                            <span>🔍 Optimasi SEO Google</span>
+                            <span class="inline-flex items-center gap-1.5">${icon('search', 'w-4 h-4 text-gray-500')} <span>Optimasi SEO Google</span></span>
                         </div>
 
                         <!-- SERP Preview Card -->
@@ -546,9 +547,9 @@ export class ArticleEditor {
                 <div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
                     <div class="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
                         <span class="font-bold text-gray-800 text-sm flex items-center gap-2">
-                            <span>📖 Pratinjau Tampilan Pembaca Publik</span>
+                            <span class="inline-flex items-center gap-1.5">${icon('book-open', 'w-4 h-4 text-gray-500')} <span>Pratinjau Tampilan Pembaca Publik</span></span>
                         </span>
-                        <button type="button" id="close-reader-preview-btn" class="text-gray-400 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-200 transition">✕</button>
+                        <button type="button" id="close-reader-preview-btn" class="text-gray-400 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-200 transition" aria-label="Tutup Pratinjau">${icon('x', 'w-5 h-5')}</button>
                     </div>
                     <div id="reader-preview-body" class="p-6 md:p-10 overflow-y-auto space-y-6">
                         <!-- Dynamic rendered full article -->
@@ -660,8 +661,8 @@ export class ArticleEditor {
             
             const wordCountEl = container.querySelector('#stat-word-count');
             const readTimeEl = container.querySelector('#stat-read-time');
-            if (wordCountEl) wordCountEl.textContent = `📄 ${totalWords} kata`;
-            if (readTimeEl) readTimeEl.textContent = `⏱ ~${readMinutes} mnt baca`;
+            if (wordCountEl) wordCountEl.innerHTML = `${icon('file-text', 'w-3.5 h-3.5')} <span>${totalWords} kata</span>`;
+            if (readTimeEl) readTimeEl.innerHTML = `${icon('clock', 'w-3.5 h-3.5')} <span>~${readMinutes} mnt baca</span>`;
 
             // Update Live Preview jika panel terlihat
             this.updateLivePreview(container);
@@ -914,7 +915,7 @@ export class ArticleEditor {
         const chipsHtml = this.tags.map((tag, idx) => `
             <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-900 text-white shadow-xs">
                 #${tag}
-                <button type="button" class="remove-tag-btn hover:text-red-300 transition" data-index="${idx}">✕</button>
+                <button type="button" class="remove-tag-btn hover:text-red-300 transition flex items-center ml-0.5" data-index="${idx}" aria-label="Hapus tag">${icon('x', 'w-3 h-3')}</button>
             </span>
         `).join('');
 

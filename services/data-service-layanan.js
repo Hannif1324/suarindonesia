@@ -11,12 +11,12 @@ export const layananData = {
     },
 
     navigation: [
-        { id: 'hiv-aids', label: 'HIV/AIDS', icon: '🏥' },
-        { id: 'kebencanaan', label: 'Kebencanaan', icon: '🆘' },
-        { id: 'pendidikan', label: 'Pendidikan', icon: '📚' },
-        { id: 'penelitian', label: 'Penelitian', icon: '🔬' },
-        { id: 'perlindungan-anak', label: 'Perlindungan Anak', icon: '👶' },
-        { id: 'magang', label: 'Magang', icon: '🎓' }
+        { id: 'hiv-aids', label: 'HIV/AIDS', icon: 'medical' },
+        { id: 'kebencanaan', label: 'Kebencanaan', icon: 'shield' },
+        { id: 'pendidikan', label: 'Pendidikan', icon: 'academic' },
+        { id: 'penelitian', label: 'Penelitian', icon: 'flask' },
+        { id: 'perlindungan-anak', label: 'Perlindungan Anak', icon: 'child' },
+        { id: 'magang', label: 'Magang', icon: 'briefcase' }
     ],
 
     services: {
@@ -24,7 +24,7 @@ export const layananData = {
             id: 'hiv-aids',
             title: 'Program HIV/AIDS pada Kelompok Rentan',
             subtitle: 'Isu HIV dalam Gerakan Sosial',
-            icon: '🏥',
+            icon: 'medical',
             image: '/public/images/home/a1a02d6c-282d-4a4f-9f42-e4eb0d330076.jpeg',
             description: 'Isu HIV masih menjadi perhatian utama Perkumpulan SuaR Indonesia dalam kerja membangun gerakan sosial.',
             content: `
@@ -48,7 +48,7 @@ export const layananData = {
             id: 'kebencanaan',
             title: 'Program Kebencanaan',
             subtitle: 'Respon Tanggap Darurat dan Ketangguhan Masyarakat',
-            icon: '🆘',
+            icon: 'shield',
             image: '/public/images/home/ef6b8ce2-1476-4441-ad78-d8d880dfa0c5.jpg',
             description: 'Merespon aksi tanggap darurat bencana untuk memenuhi kebutuhan dasar kelompok rentan di pengungsian.',
             highlights: [
@@ -69,7 +69,7 @@ export const layananData = {
             id: 'pendidikan',
             title: 'Program Pendidikan dan Pelatihan',
             subtitle: 'Peningkatan Kapasitas dan Pengorganisasian',
-            icon: '📚',
+            icon: 'academic',
             image: '/public/images/home/815794f5-6c53-4208-8413-745fb6c6577a.jpeg',
             description: 'SuaR Indonesia memiliki sumber daya manusia (SDM) yang terlatih sebagai pelatih/fasilitator nasional dan lokal.',
             programs: [
@@ -86,7 +86,7 @@ export const layananData = {
             id: 'penelitian',
             title: 'Program Penelitian',
             subtitle: 'Data untuk Kebijakan Sosial dan Kesehatan',
-            icon: '🔬',
+            icon: 'flask',
             image: '/public/images/home/65293a91-5611-4783-bd0c-fe49c0d2c610.jpeg',
             description: 'Program Penelitian SuaR Indonesia berfokus pada pengumpulan, analisis, dan diseminasi data yang relevan.',
             focus: [
@@ -101,7 +101,7 @@ export const layananData = {
             id: 'perlindungan-anak',
             title: 'Program Perlindungan Perempuan & Anak',
             subtitle: 'Layanan Inklusi dan Lingkungan Ramah Anak',
-            icon: '👶',
+            icon: 'child',
             image: '/public/images/home/ab6d5920-606b-4f19-aa46-68ccfb1eae33.jpeg',
             description: 'Upaya komprehensif untuk memberikan dukungan program pemenuhan hak-hak anak dan perempuan.',
             issues: [
@@ -118,7 +118,7 @@ export const layananData = {
             id: 'magang',
             title: 'Program Magang',
             subtitle: 'Pembelajaran Terbaik untuk Pembuat Kebijakan',
-            icon: '🎓',
+            icon: 'briefcase',
             image: '/public/images/home/24602b52-5b49-40a8-99a9-52df012dd8e5.jpeg',
             description: 'SuaR Indonesia berkomitmen memberikan layanan kepada masyarakat dan pemangku kepentingan untuk memenuhi hak-hak kelompok marginal.',
             quote: 'Mewujudkan perempuan, anak dan masyarakat marginal yang berdaya, sehat dan bermartabat',

@@ -1,12 +1,12 @@
 /**
- * Reload Data Script
- * Open browser console and run: window.reloadData()
+ * @description : Script utility browser console untuk reload dan re-seed data database
+ * @author      : Gemini Agent
+ * @modified    : 2026-10-19
  */
 
 // Add reload function to window
-// Add reload function to window
 window.reloadData = async function () {
-    console.log('🔄 Reloading data...');
+    console.log('[RELOAD] Reloading data...');
 
     try {
         // Import data service
@@ -16,16 +16,16 @@ window.reloadData = async function () {
         await dataService.clearDatabase();
         await dataService.seedData();
 
-        console.log('✅ Data reloaded successfully!');
-        console.log('🔄 Refreshing page...');
+        console.log('[SUCCESS] Data reloaded successfully!');
+        console.log('[RELOAD] Refreshing page...');
 
         // Refresh page to show new data
         setTimeout(() => {
             window.location.reload();
         }, 1000);
     } catch (error) {
-        console.error('❌ Failed to reload data:', error);
+        console.error('[ERROR] Failed to reload data:', error);
     }
 };
 
-console.log('💡 To reload data with new images, run: window.reloadData()');
+console.log('[INFO] To reload data with new images, run: window.reloadData()');

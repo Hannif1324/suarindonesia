@@ -6,6 +6,7 @@
 import { DOM } from '../../utils/helpers.js';
 import { supabase } from '../services/supabase-client.js';
 import { logger } from '../../debugs/logger.js';
+import { icon } from '../../components/ui/icons.js';
 
 export class KegiatanPage {
     constructor() {
@@ -17,12 +18,12 @@ export class KegiatanPage {
                 image: "/public/images/kegiatan/ca8b51c5-e5a1-4069-9d86-59839d9337a2.jpeg"
             },
             categories: [
-                { id: 'semua', label: 'Semua Kegiatan', icon: '📋' },
-                { id: 'rapat', label: 'Rapat & Pertemuan', icon: '🤝' },
-                { id: 'pelatihan', label: 'Pelatihan & Workshop', icon: '📚' },
-                { id: 'sosialisasi', label: 'Sosialisasi & Kampanye', icon: '📢' },
-                { id: 'lapangan', label: 'Program Lapangan', icon: '🌾' },
-                { id: 'monev', label: 'Monitoring & Evaluasi', icon: '📊' }
+                { id: 'semua', label: 'Semua Kegiatan', icon: 'clipboard' },
+                { id: 'rapat', label: 'Rapat & Pertemuan', icon: 'handshake' },
+                { id: 'pelatihan', label: 'Pelatihan & Workshop', icon: 'academic' },
+                { id: 'sosialisasi', label: 'Sosialisasi & Kampanye', icon: 'megaphone' },
+                { id: 'lapangan', label: 'Program Lapangan', icon: 'leaf' },
+                { id: 'monev', label: 'Monitoring & Evaluasi', icon: 'chart' }
             ],
             activities: [],
             photoGallery: [],
@@ -164,7 +165,7 @@ export class KegiatanPage {
                             data-category="${cat.id}" 
                             class="category-filter flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all ${cat.id === 'semua' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-purple-100 hover:text-purple-700'}"
                         >
-                            <span class="text-lg">${cat.icon}</span>
+                            <span class="flex-shrink-0">${icon(cat.icon, 'w-4 h-4')}</span>
                             <span>${cat.label}</span>
                         </button>
                     `).join('')}
@@ -216,8 +217,9 @@ export class KegiatanPage {
                         </span>
                     </div>
                     <div class="absolute top-4 right-4">
-                        <span class="px-3 py-1 bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-medium rounded-full">
-                            📅 ${activity.date}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-medium rounded-full shadow-xs">
+                            ${icon('calendar', 'w-3.5 h-3.5 text-purple-600')}
+                            <span>${activity.date}</span>
                         </span>
                     </div>
                 </div>
@@ -274,8 +276,9 @@ export class KegiatanPage {
         section.innerHTML = `
             <div class="container mx-auto px-4">
                 <div class="text-center mb-12">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                        📸 Galeri Foto Dokumentasi
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4 inline-flex items-center justify-center gap-3">
+                        <span class="p-2 rounded-2xl bg-purple-100 text-purple-600">${icon('camera', 'w-7 h-7 md:w-8 md:h-8')}</span>
+                        <span>Galeri Foto Dokumentasi</span>
                     </h2>
                     <p class="text-lg text-gray-600">Dokumentasi kegiatan SuaR Indonesia</p>
                     <div class="w-24 h-1 bg-gradient-to-r from-purple-600 to-pink-600 mx-auto rounded-full mt-4"></div>
@@ -320,8 +323,9 @@ export class KegiatanPage {
         section.innerHTML = `
             <div class="container mx-auto px-4">
                 <div class="text-center mb-12">
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                        🎥 Video Dokumentasi
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4 inline-flex items-center justify-center gap-3">
+                        <span class="p-2 rounded-2xl bg-purple-100 text-purple-600">${icon('video', 'w-7 h-7 md:w-8 md:h-8')}</span>
+                        <span>Video Dokumentasi</span>
                     </h2>
                     <p class="text-lg text-gray-600">Video kegiatan dan program SuaR Indonesia</p>
                     <div class="w-24 h-1 bg-gradient-to-r from-purple-600 to-pink-600 mx-auto rounded-full mt-4"></div>

@@ -11,6 +11,7 @@
 import { DOM } from '../../utils/helpers.js';
 // Tag: Import logger dari root /debugs/
 import { logger } from '../../debugs/logger.js';
+import { icon } from './icons.js';
 
 export class PopupModal {
     /**
@@ -72,9 +73,10 @@ export class PopupModal {
         // Tag: Class untuk animasi close (querySelector target)
         container.classList.add('popup-container');
 
-        // Tag: Tombol Close — ✕ kecil pojok kanan atas
+        // Tag: Tombol Close — SVG X icon pojok kanan atas
         const closeBtn = document.createElement('button');
-        closeBtn.textContent = '✕';
+        closeBtn.setAttribute('aria-label', 'Tutup popup modal');
+        closeBtn.innerHTML = icon('x', 'w-5 h-5');
         Object.assign(closeBtn.style, {
             position: 'absolute',
             top: '8px',

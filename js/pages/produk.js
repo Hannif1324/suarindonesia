@@ -6,6 +6,7 @@
 import { DOM } from '../../utils/helpers.js';
 import { supabase } from '../services/supabase-client.js';
 import { logger } from '../../debugs/logger.js';
+import { icon } from '../../components/ui/icons.js';
 
 export class ProdukPage {
     constructor() {
@@ -189,7 +190,8 @@ export class ProdukPage {
                 <ul class="space-y-2">
                     ${product.variants.map(variant => `
                         <li class="flex items-start text-sm text-gray-600">
-                            <span class="mr-2 text-green-500">✓</span> ${variant}
+                            <span class="mr-2 text-emerald-500 inline-flex items-center mt-0.5 flex-shrink-0">${icon('check', 'w-4 h-4 text-emerald-500')}</span>
+                            <span>${variant}</span>
                         </li>
                     `).join('')}
                 </ul>
