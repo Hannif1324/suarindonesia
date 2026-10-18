@@ -1,0 +1,41 @@
+<!-- [AGENT-GENERATED]
+Description : Docsify HTML entrypoint for Interactive Documentation Hub SuaR Indonesia
+Created     : 2026-10-17
+Modified    : 2026-10-17
+Part of     : Documentation Engine
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>SuaR Indonesia — Documentation Hub</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+</head>
+<body>
+  <div id="app">Memuat dokumentasi...</div>
+  <script>
+    window.$docsify = {
+      name: '📖 SuaR Docs',
+      loadSidebar: true,
+      subMaxLevel: 3,
+      homepage: 'index.md',
+      auto2top: true,
+      search: { maxAge: 86400000, paths: 'auto', placeholder: 'Cari dokumentasi...', noData: 'Tidak ditemukan!', depth: 4 },
+      copyCode: { buttonText: 'Salin', errorText: 'Gagal', successText: 'Disalin!' }
+    };
+  </script>
+  <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify@4/lib/plugins/zoom-image.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-javascript.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-sql.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-markdown.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: false });</script>
+  <script src="//unpkg.com/docsify-mermaid@2.0.1/dist/docsify-mermaid.js"></script>
+</body>
+</html>

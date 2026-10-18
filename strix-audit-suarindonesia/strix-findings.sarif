@@ -1,0 +1,223 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Strix for Antigravity Security Engine",
+          "version": "1.0.0",
+          "informationUri": "https://github.com/usestrix/strix",
+          "rules": [
+            {
+              "id": "STRIX-001",
+              "name": "HardcodedPlaintextCredentials",
+              "shortDescription": {
+                "text": "Hardcoded plaintext database/admin password found in client-side bundle"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/798.html",
+              "properties": {
+                "cvss": 9.8,
+                "cwe": "CWE-798"
+              }
+            },
+            {
+              "id": "STRIX-002",
+              "name": "DOMCrossSiteScriptingReaderModal",
+              "shortDescription": {
+                "text": "Unsanitized user inputs interpolated into innerHTML in reader preview modal"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/79.html",
+              "properties": {
+                "cvss": 8.2,
+                "cwe": "CWE-79"
+              }
+            },
+            {
+              "id": "STRIX-003",
+              "name": "StoredCrossSiteScriptingSubmissions",
+              "shortDescription": {
+                "text": "Stored XSS and unmasked PII in citizen complaints admin dashboard"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/79.html",
+              "properties": {
+                "cvss": 8.8,
+                "cwe": "CWE-79"
+              }
+            },
+            {
+              "id": "STRIX-004",
+              "name": "MissingAuthenticationCheckMigration",
+              "shortDescription": {
+                "text": "Migration admin utility lacks session verification and authentication gate"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/306.html",
+              "properties": {
+                "cvss": 6.5,
+                "cwe": "CWE-306"
+              }
+            },
+            {
+              "id": "STRIX-005",
+              "name": "InsecureFileUploadValidation",
+              "shortDescription": {
+                "text": "Missing file extension whitelist and size validation in image and video uploaders"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/434.html",
+              "properties": {
+                "cvss": 6.5,
+                "cwe": "CWE-434"
+              }
+            },
+            {
+              "id": "STRIX-006",
+              "name": "DOMXSSCustomDialog",
+              "shortDescription": {
+                "text": "Unescaped dynamic strings rendered into modal innerHTML in custom dialog"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/79.html",
+              "properties": {
+                "cvss": 6.1,
+                "cwe": "CWE-79"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "STRIX-001",
+          "message": {
+            "text": "Hardcoded database password comment '// supabase pasword: SU4R#!23A' committed to client-side code."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "js/services/supabase-client.js"
+                },
+                "region": {
+                  "startLine": 17,
+                  "endLine": 17
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "STRIX-002",
+          "message": {
+            "text": "Title, excerpt, and author values are injected directly into innerHTML in openReaderPreviewModal() without DOMPurify."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "admin/js/article-editor.js"
+                },
+                "region": {
+                  "startLine": 1088,
+                  "endLine": 1100
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "STRIX-003",
+          "message": {
+            "text": "Unsanitized citizen submission data (name, email, phone, case_description) rendered directly into table and detail modal innerHTML."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "admin/js/submissions-manager.js"
+                },
+                "region": {
+                  "startLine": 160,
+                  "endLine": 245
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "STRIX-004",
+          "message": {
+            "text": "admin/migrate.html is accessible directly without checking session state via supabase.auth.getSession()."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "admin/migrate.html"
+                },
+                "region": {
+                  "startLine": 1,
+                  "endLine": 571
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "STRIX-005",
+          "message": {
+            "text": "ImageUploader and VideoUploader accept client files without strict MIME/extension whitelist and file size bounding in JS."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "admin/js/image-uploader.js"
+                },
+                "region": {
+                  "startLine": 17,
+                  "endLine": 41
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "STRIX-006",
+          "message": {
+            "text": "CustomDialog alert() and confirm() render message and title strings directly into innerHTML."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "admin/js/custom-dialog.js"
+                },
+                "region": {
+                  "startLine": 22,
+                  "endLine": 65
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

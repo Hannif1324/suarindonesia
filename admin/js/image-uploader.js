@@ -6,16 +6,38 @@ export class ImageUploader {
     }
 
     /**
-     * Upload image to Supabase Storage
-     * @param {File} file - Image file
-     * @param {Function} onProgress - Progress callback (0-100)
-     * @returns {Promise<string>} - Public URL of uploaded image
+     * @description : Mengunggah file gambar ke Supabase Storage dengan validasi ekstensi dan batas ukuran file
+     * @param       : {File} file - File gambar yang akan diunggah
+     * @param       : {Function} onProgress - Callback progress (0-100, opsional)
+     * @return      : {Promise<string>} - Public URL gambar yang diunggah
+     * @throws      : {Error} - Jika ekstensi atau MIME type tidak diizinkan, atau ukuran > 10MB
+     * @author      : Gemini Agent
+     * @modified    : 2026-10-18
      */
     async upload(file, onProgress = null) {
         try {
-            // Generate unique filename
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+            if (!file) {
+                throw new Error('Tidak ada file yang dipilih.');
+            }
+
+            // Validasi tipe MIME dan ekstensi file (Whitelist gambar aman)
+            const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            const isMimeValid = file.type && file.type.startsWith('image/');
+            const isExtValid = allowedExtensions.includes(fileExt);
+
+            if (!isMimeValid || !isExtValid) {
+                throw new Error('Format file tidak didukung! Hanya file gambar (JPG, JPEG, PNG, WEBP, GIF) yang diizinkan.');
+            }
+
+            // Validasi ukuran file (Maksimum 10MB = 10 * 1024 * 1024 bytes)
+            const maxSizeBytes = 10 * 1024 * 1024;
+            if (file.size > maxSizeBytes) {
+                throw new Error('Ukuran file terlalu besar! Maksimal ukuran file gambar adalah 10MB.');
+            }
+
+            // Generate unique filename yang aman
+            const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
             const filePath = `${fileName}`;
 
             // Upload to Supabase Storage

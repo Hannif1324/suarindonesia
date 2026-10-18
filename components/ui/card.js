@@ -13,8 +13,8 @@ export class Card {
             className: 'bg-white rounded-lg shadow-md overflow-hidden card-hover cursor-pointer'
         });
 
-        const imageUrl = article.coverImage || 'https://via.placeholder.com/400x300?text=SuaR+Indonesia';
-        const excerpt = truncate(article.content || article.meta?.description || 'Baca selengkapnya...', 120);
+        const imageUrl = article.image || article.coverImage || 'https://via.placeholder.com/400x300?text=SuaR+Indonesia';
+        const excerpt = truncate(article.excerpt || (typeof article.content === 'string' ? article.content : '') || article.meta?.description || 'Baca selengkapnya...', 120);
 
         card.innerHTML = `
             <div class="relative h-48 overflow-hidden">

@@ -69,6 +69,29 @@ suarindonesia/
 ## Teknologi
 
 - Vanilla JavaScript (ES6 Modules)
-- IndexedDB
-- Tailwind CSS (via CDN)
+- Supabase (PostgreSQL, Auth, Storage)
+- IndexedDB (Client offline cache)
+- Tailwind CSS (via CDN) with Typography
+- Marked.js & DOMPurify (Markdown rendering engine)
 - HTML5
+
+---
+
+## 📂 Dokumentasi Mendalam (Technical Reference)
+
+Seluruh dokumentasi teknis mendalam telah dimodularkan di dalam folder **`docs/`**:
+- 🌐 [Dokumentasi Hub](docs/index.md)
+- 🏛️ [Alur Pembuatan & Rendering Artikel](docs/architecture/article-flow.md)
+- 📝 [Development Logs](docs/logs/index.md)
+
+### 📖 Menjalankan Docsify Live Preview
+Dokumentasi web interaktif dapat dibuka secara lokal menggunakan Docsify:
+```bash
+# Opsi 1 (Node.js):
+npx docsify-cli serve ./docs
+
+# Opsi 2 (Python):
+python -m http.server 3000 --directory docs
+```
+Akses di browser: `http://localhost:3000`.
+

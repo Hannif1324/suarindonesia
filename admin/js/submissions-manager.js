@@ -9,6 +9,38 @@ export class SubmissionsManager {
         this.lastCount = -1;
     }
 
+    /**
+     * @description : Mengamankan string teks dari injeksi HTML (XSS Protection)
+     * @param {string} str - Teks masukan
+     * @returns {string} Teks aman yang telah di-escape
+     * @author : Gemini Agent
+     * @modified : 2026-10-18
+     */
+    escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, (m) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        }[m]));
+    }
+
+    /**
+     * @description : Menyamarkan (masking) nomor telepon untuk perlindungan privasi data pribadi (PII)
+     * @param {string} phone - Nomor telepon
+     * @returns {string} Nomor telepon tersamar (e.g. 0812-****-5678)
+     * @author : Gemini Agent
+     * @modified : 2026-10-18
+     */
+    maskPhone(phone) {
+        if (!phone) return '-';
+        const clean = String(phone).trim();
+        if (clean.length < 8) return this.escapeHtml(clean);
+        return clean.replace(/^(\d{4})\d+(\d{3,4})$/, '$1-****-$2');
+    }
+
     async renderListView() {
         const { data: submissions, error } = await supabase
             .from('contact_submissions')
@@ -154,24 +186,24 @@ export class SubmissionsManager {
         });
 
         return `
-            <tr class="submission-row hover:bg-gray-50 transition" data-status="${submission.status}" data-id="${submission.id}">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">#${submission.id}</td>
+            <tr class="submission-row hover:bg-gray-50 transition" data-status="${this.escapeHtml(submission.status)}" data-id="${this.escapeHtml(submission.id)}">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">#${this.escapeHtml(submission.id)}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${submission.name}</div>
+                    <div class="text-sm font-medium text-gray-900">${this.escapeHtml(submission.name)}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-600">${submission.email}</div>
+                    <div class="text-sm text-gray-600">${this.escapeHtml(submission.email)}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-600">${submission.phone}</div>
+                    <div class="text-sm font-mono text-gray-600">${this.maskPhone(submission.phone)}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[submission.status]}">
-                        ${submission.status.toUpperCase()}
+                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[submission.status] || 'bg-gray-100 text-gray-800'}">
+                        ${this.escapeHtml(submission.status).toUpperCase()}
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    ${formattedDate}
+                    ${this.escapeHtml(formattedDate)}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <button class="view-detail-btn text-indigo-600 hover:text-indigo-900 font-medium mr-3" data-id="${submission.id}">
@@ -211,7 +243,7 @@ export class SubmissionsManager {
                 <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                     <div class="p-6">
                         <div class="flex justify-between items-start mb-6">
-                            <h3 class="text-2xl font-bold text-gray-900">Detail Pengaduan #${submission.id}</h3>
+                            <h3 class="text-2xl font-bold text-gray-900">Detail Pengaduan #${this.escapeHtml(submission.id)}</h3>
                             <button id="close-detail-modal" class="text-gray-400 hover:text-gray-600">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -222,24 +254,31 @@ export class SubmissionsManager {
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nama</label>
-                                <p class="text-gray-900">${submission.name}</p>
+                                <p class="text-gray-900">${this.escapeHtml(submission.name)}</p>
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                    <p class="text-gray-900">${submission.email}</p>
+                                    <p class="text-gray-900">${this.escapeHtml(submission.email)}</p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Telepon</label>
-                                    <p class="text-gray-900">${submission.phone}</p>
+                                    <p class="text-gray-900 font-mono flex items-center gap-2">
+                                        <span>${this.escapeHtml(submission.phone)}</span>
+                                        ${submission.phone ? `
+                                            <a href="https://wa.me/${String(submission.phone).replace(/\D/g, '')}" target="_blank" rel="noopener noreferrer" class="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 hover:bg-emerald-100">
+                                                WhatsApp
+                                            </a>
+                                        ` : ''}
+                                    </p>
                                 </div>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Kasus / Pengaduan</label>
                                 <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                    <p class="text-gray-900 whitespace-pre-wrap">${submission.case_description}</p>
+                                    <p class="text-gray-900 whitespace-pre-wrap">${this.escapeHtml(submission.case_description)}</p>
                                 </div>
                             </div>
 
@@ -254,7 +293,7 @@ export class SubmissionsManager {
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Masuk</label>
-                                    <p class="text-gray-900">${formattedDate}</p>
+                                    <p class="text-gray-900">${this.escapeHtml(formattedDate)}</p>
                                 </div>
                             </div>
                         </div>

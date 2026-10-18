@@ -221,7 +221,8 @@ values
   ('photo-gallery-images', 'photo-gallery-images', true),
   ('video-thumbnails', 'video-thumbnails', true),
   ('activity-images', 'activity-images', true),
-  ('staff-images', 'staff-images', true)  -- Bucket untuk foto staff
+  ('staff-images', 'staff-images', true),  -- Bucket untuk foto staff
+  ('article-images', 'article-images', true)  -- Bucket untuk gambar artikel & naskah
 on conflict (id) do nothing;
 
 -- Storage Policies (Drop first)
@@ -281,3 +282,35 @@ create policy "Authenticated Update Staff Images" on storage.objects for update 
 -- Policy: Hanya user authenticated yang bisa hapus foto staff
 drop policy if exists "Authenticated Delete Staff Images" on storage.objects;
 create policy "Authenticated Delete Staff Images" on storage.objects for delete using ( bucket_id = 'staff-images' and auth.role() = 'authenticated' );
+
+-- article-images
+-- Policy: Semua orang bisa melihat gambar artikel
+drop policy if exists "Public Access Article Images" on storage.objects;
+create policy "Public Access Article Images" on storage.objects for select using ( bucket_id = 'article-images' );
+
+-- Policy: Hanya user authenticated yang bisa upload gambar artikel
+drop policy if exists "Authenticated Upload Article Images" on storage.objects;
+create policy "Authenticated Upload Article Images" on storage.objects for insert with check ( bucket_id = 'article-images' and auth.role() = 'authenticated' );
+
+-- Policy: Hanya user authenticated yang bisa update gambar artikel
+drop policy if exists "Authenticated Update Article Images" on storage.objects;
+create policy "Authenticated Update Article Images" on storage.objects for update using ( bucket_id = 'article-images' and auth.role() = 'authenticated' );
+
+-- Policy: Hanya user authenticated yang bisa hapus gambar artikel
+drop policy if exists "Authenticated Delete Article Images" on storage.objects;
+create policy "Authenticated Delete Article Images" on storage.objects for delete using ( bucket_id = 'article-images' and auth.role() = 'authenticated' );
+
+-- ============================================================================
+-- ARTICLES SCHEMA EVOLUTION (Markdown Editor & Editorial Flow)
+-- ============================================================================
+alter table if exists articles add column if not exists content_markdown text;
+alter table if exists articles add column if not exists status text default 'published' check (status in ('draft', 'published', 'archived'));
+alter table if exists articles add column if not exists published_at timestamp with time zone default timezone('utc'::text, now());
+alter table if exists articles add column if not exists seo_title text;
+alter table if exists articles add column if not exists seo_description text;
+alter table if exists articles add column if not exists seo_keywords text[];
+
+-- Index untuk filter status dan tanggal terbit
+create index if not exists idx_articles_status on articles(status);
+create index if not exists idx_articles_published_at on articles(published_at desc);
+

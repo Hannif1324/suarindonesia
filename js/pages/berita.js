@@ -31,12 +31,16 @@ export class BeritaPage {
 
             if (error) throw error;
 
+            // Filter out draft articles so only published (or legacy null) articles show publicly
+            const publicArticles = (data || []).filter(article => article.status !== 'draft');
+
             // Transform Supabase data to match existing structure
-            this.data.articles = data.map(article => ({
+            this.data.articles = publicArticles.map(article => ({
                 id: article.id,
                 slug: article.slug,
                 title: article.title,
                 excerpt: article.excerpt,
+                content_markdown: article.content_markdown,
                 sections: article.content, // JSONB field
                 image: article.image,
                 date: article.date,
@@ -44,7 +48,8 @@ export class BeritaPage {
                 category: article.category,
                 readTime: article.read_time,
                 tags: article.tags,
-                gallery: article.gallery
+                gallery: article.gallery,
+                status: article.status || 'published'
             }));
 
             this.isLoading = false;

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<!-- [STRIX-POC-02] Proof-of-Concept: DOM XSS in Reader Preview Modal -->
+<!-- Target: admin/js/article-editor.js (openReaderPreviewModal) -->
+<!-- Vulnerability: CWE-79 - Improper Neutralization of Input During Web Page Generation -->
+<html>
+<head>
+    <title>PoC 02 - Reader Preview Modal XSS</title>
+</head>
+<body>
+    <h2>Reproducing Reader Preview Modal XSS</h2>
+    <p>Steps to Reproduce:</p>
+    <ol>
+        <li>Open <code>http://localhost:5473/admin/index.html</code></li>
+        <li>Navigate to <b>Berita & Artikel</b> &gt; <b>Tulis Konten Baru</b></li>
+        <li>In the Title input field (<code>#input-article-title</code>), enter:
+            <pre>&lt;img src="x" onerror="alert('STRIX-POC-XSS-TITLE-TRIGGERED')"&gt;</pre>
+        </li>
+        <li>Click <b>Pratinjau Pembaca</b> (<code>#btn-reader-preview</code>)</li>
+        <li><b>Result:</b> The alert box pops up immediately because <code>title</code> is injected into <code>previewBody.innerHTML</code> without escaping or DOMPurify.</li>
+    </ol>
+</body>
+</html>

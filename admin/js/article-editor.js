@@ -1,20 +1,122 @@
+// [AGENT-GENERATED]
+// Description : Modul Editor Artikel Markdown-First dengan UI Kemplo Style, Live Preview, Metadata & SEO Google
+// Created     : 2026-10-17
+// Modified    : 2026-10-17
+// Part of     : Admin CMS SuaR Indonesia (admin/js/article-editor.js)
+
 import { supabase } from '../../js/services/supabase-client.js';
 import { ImageUploader } from './image-uploader.js';
 import { VideoUploader } from './video-uploader.js';
 import { CustomDialog } from './custom-dialog.js';
 
 export class ArticleEditor {
+    /**
+     * @description : Inisialisasi state editor artikel, uploader, dan konfigurasi lokal
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
     constructor() {
         this.currentArticle = null;
-        this.sections = [];
+        this.editorMode = 'edit'; // 'edit' | 'split' | 'preview'
+        this.activeSidebarTab = 'metadata'; // 'metadata' | 'distribution' | 'seo'
+        this.tags = [];
         this.gallery = [];
+        this.autoSaveTimer = null;
         this.imageUploader = new ImageUploader('article-images');
         this.videoUploader = new VideoUploader('videos');
         this.customDialog = new CustomDialog();
     }
 
     /**
-     * Render the article list view - MOBILE RESPONSIVE
+     * @description : Mengambil parser Markdown marked dengan fallback jika belum ter-load
+     * @returns {Object} Library marked
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
+    getMarkedParser() {
+        if (typeof window !== 'undefined' && window.marked) {
+            return window.marked;
+        }
+        return {
+            parse: (txt) => (txt || '').replace(/\n/g, '<br>')
+        };
+    }
+
+    /**
+     * @description : Sanitasi markup HTML menggunakan DOMPurify untuk mencegah XSS
+     * @param {string} rawHtml - HTML mentah hasil parse markdown
+     * @returns {string} HTML yang aman
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
+    sanitizeHtml(rawHtml) {
+        if (typeof window !== 'undefined' && window.DOMPurify) {
+            return window.DOMPurify.sanitize(rawHtml);
+        }
+        return rawHtml;
+    }
+
+    /**
+     * @description : Konversi tanggal ke format teks Indonesia (contoh: "17 Oktober 2026")
+     * @param {string|Date} dateVal - Tanggal masukan
+     * @returns {string} Tanggal terformat Indonesia
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
+    formatIndonesianDate(dateVal) {
+        if (!dateVal) return '';
+        const d = new Date(dateVal);
+        if (isNaN(d.getTime())) return String(dateVal);
+        return d.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+    }
+
+    /**
+     * @description : Mengonversi struktur JSONB sections lama menjadi format Markdown murni
+     * @param {Array|string} content - Konten legacy artikel
+     * @returns {string} String Markdown yang siap diedit
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
+    convertLegacyContentToMarkdown(content) {
+        if (!content) return '';
+        if (typeof content === 'string') return content;
+        if (!Array.isArray(content)) return '';
+
+        return content.map(section => {
+            switch (section.type) {
+                case 'paragraph':
+                    return section.content || '';
+                case 'heading':
+                    return `## ${section.content || ''}`;
+                case 'quote':
+                    return `> ${section.content || ''}${section.author ? `\n> — *${section.author}*` : ''}`;
+                case 'image':
+                    return `![${section.caption || 'Gambar'}](${section.url || ''})\n*${section.caption || ''}*`;
+                case 'video':
+                    return `@[video](${section.url || ''})\n*${section.caption || ''}*`;
+                case 'list':
+                    if (Array.isArray(section.items)) {
+                        return section.items.map((item, idx) => 
+                            section.ordered ? `${idx + 1}. ${item}` : `- ${item}`
+                        ).join('\n');
+                    }
+                    return '';
+                default:
+                    return section.content || '';
+            }
+        }).filter(Boolean).join('\n\n');
+    }
+
+    /**
+     * @description : Render tampilan daftar artikel (List View) dengan filter & status badge
+     * @returns {Promise<string>} Template HTML string
+     * @throws {Error} Gagal memuat data artikel
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
      */
     async renderListView() {
         const { data: articles, error } = await supabase
@@ -24,48 +126,81 @@ export class ArticleEditor {
 
         if (error) {
             console.error('Error fetching articles:', error);
-            return '<div class="text-red-500">Error loading articles</div>';
+            return '<div class="p-6 bg-red-50 text-red-600 rounded-lg">Gagal memuat daftar artikel dari database.</div>';
         }
 
         return `
             <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 class="text-2xl font-bold">Manage Articles</h2>
-                <button id="new-article-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 w-full sm:w-auto">
-                    + New Article
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">Kelola Berita & Artikel</h2>
+                    <p class="text-sm text-gray-500 mt-1">Total: ${articles.length} naskah publikasi dan draf redaksi</p>
+                </div>
+                <button id="new-article-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-sm hover:shadow transition flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span>Tulis Konten Baru</span>
                 </button>
             </div>
 
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <!-- Mobile-friendly horizontal scroll wrapper -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                        <thead class="bg-gray-50/80">
                             <tr>
-                                <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                                <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                                <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Date</th>
-                                <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Judul & Ringkasan</th>
+                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kategori</th>
+                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden sm:table-cell">Tanggal</th>
+                                <th class="px-6 py-3.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            ${articles.map(article => `
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-4 sm:px-6 py-4">
-                                        <div class="text-sm font-medium text-gray-900">${article.title}</div>
-                                        <div class="text-xs text-gray-500 truncate max-w-[200px] sm:max-w-none">${article.slug}</div>
-                                    </td>
-                                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                            ${article.category}
-                                        </span>
-                                    </td>
-                                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">${article.date}</td>
-                                    <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button class="text-indigo-600 hover:text-indigo-900 mr-2 sm:mr-3 edit-btn" data-id="${article.id}">Edit</button>
-                                        <button class="text-red-600 hover:text-red-900 delete-btn" data-id="${article.id}">Del</button>
+                        <tbody class="bg-white divide-y divide-gray-100">
+                            ${articles.length === 0 ? `
+                                <tr>
+                                    <td colspan="5" class="px-6 py-12 text-center text-gray-400">
+                                        Belum ada artikel. Klik "Tulis Konten Baru" untuk memulai!
                                     </td>
                                 </tr>
-                            `).join('')}
+                            ` : articles.map(article => {
+                                const status = article.status || 'published';
+                                const isDraft = status === 'draft';
+                                const badgeColor = isDraft 
+                                    ? 'bg-amber-100 text-amber-800 border border-amber-200' 
+                                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                                const badgeText = isDraft ? 'Draf' : 'Terbit';
+
+                                return `
+                                    <tr class="hover:bg-gray-50/70 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="font-semibold text-gray-900 line-clamp-1">${article.title}</div>
+                                            <div class="text-xs text-gray-400 mt-0.5 truncate max-w-md">${article.slug}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-indigo-50 text-indigo-700 uppercase">
+                                                ${article.category || 'berita'}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2.5 py-1 text-xs font-semibold rounded-full ${badgeColor}">
+                                                ${badgeText}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
+                                            ${article.date || '-'}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                            <a href="#/artikel/${article.slug}" target="_blank" class="text-gray-400 hover:text-indigo-600 inline-block p-1" title="Lihat di Web">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                            </a>
+                                            <button class="text-indigo-600 hover:text-indigo-900 font-semibold edit-btn px-2.5 py-1 rounded-lg hover:bg-indigo-50" data-id="${article.id}">
+                                                Edit
+                                            </button>
+                                            <button class="text-red-500 hover:text-red-700 delete-btn px-2.5 py-1 rounded-lg hover:bg-red-50" data-id="${article.id}">
+                                                Hapus
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -74,565 +209,1076 @@ export class ArticleEditor {
     }
 
     /**
-     * Render the article editor form
+     * @description : Render tampilan utama form editor artikel (Kemplo Style Layout)
+     * @param {Object|null} article - Objek artikel bila dalam mode edit
+     * @returns {string} Template HTML editor lengkap
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
      */
     renderEditorView(article = null) {
         this.currentArticle = article;
-        this.sections = article?.content || [];
-        this.gallery = article?.gallery || [];
+        this.editorMode = 'edit';
+        this.activeSidebarTab = 'metadata';
+
+        // Persiapan data
+        const markdownContent = article 
+            ? (article.content_markdown || this.convertLegacyContentToMarkdown(article.content))
+            : '';
+        this.tags = Array.isArray(article?.tags) ? [...article.tags] : [];
+        this.gallery = Array.isArray(article?.gallery) ? [...article.gallery] : [];
+
+        const defaultCover = article?.image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop&q=80';
+        const initialTitle = article?.title || '';
+        const initialExcerpt = article?.excerpt || '';
 
         return `
-            <div class="mb-6">
-                <button id="back-to-list" class="text-gray-600 hover:text-gray-900 flex items-center">
-                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                    Back to List
-                </button>
+            <!-- Top Bar Navigasi Meja Redaksi -->
+            <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-gray-200">
+                <div class="flex items-center gap-3">
+                    <button id="back-to-list" class="text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        <span>Meja Redaksi</span>
+                    </button>
+                    <span class="text-gray-300">/</span>
+                    <span class="text-gray-800 font-semibold text-sm">
+                        ${article ? 'Edit Konten Liputan' : 'Tulis Konten Baru'}
+                    </span>
+                    <div class="hidden lg:flex items-center gap-2 text-xs text-gray-500 bg-amber-50/80 border border-amber-200/60 text-amber-800 px-3 py-1 rounded-full font-medium ml-2">
+                        <span id="stat-word-count">📄 0 kata</span>
+                        <span>•</span>
+                        <span id="stat-read-time">⏱ ~1 mnt baca</span>
+                    </div>
+                </div>
+
+                <!-- Tombol Aksi Redaksi -->
+                <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <button type="button" id="btn-reader-preview" class="px-3.5 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-xl flex items-center gap-1.5 transition">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        <span>Pratinjau Pembaca</span>
+                    </button>
+                    <button type="button" id="btn-save-draft" class="px-3.5 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-amber-50 hover:text-amber-700 border border-gray-300 rounded-xl flex items-center gap-1.5 transition">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                        <span>Simpan Draf</span>
+                    </button>
+                    <button type="button" id="btn-publish-direct" class="px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-gray-900 hover:bg-black rounded-xl shadow-sm flex items-center gap-1.5 transition">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <span>Terbitkan Langsung</span>
+                    </button>
+                </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-2xl font-bold mb-6">${article ? 'Edit Article' : 'New Article'}</h2>
-
-                <form id="article-form" class="space-y-6">
-                    <!-- Basic Info -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
-                            <input type="text" name="title" required value="${article?.title || ''}" placeholder="e.g., Pelatihan Digital Marketing untuk UMKM"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <p class="text-xs text-gray-500 mt-1">Judul utama artikel yang menarik.</p>
+            <!-- Form Artikel Utama (Split Layout 2 Kolom) -->
+            <form id="article-form" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- KOLOM KIRI (7/12 Desktop): Naskah & Teks Konten -->
+                <div class="lg:col-span-8 space-y-6">
+                    
+                    <!-- 1. KARTU JUDUL BERITA UTAMA -->
+                    <div class="bg-white rounded-2xl border border-gray-200/90 shadow-sm p-5 sm:p-6 transition focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100">
+                        <div class="flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                Judul Berita Utama
+                            </span>
+                            <span id="title-char-counter" class="text-gray-400 font-mono">0/70 karakter</span>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Slug *</label>
-                            <input type="text" name="slug" required value="${article?.slug || ''}" placeholder="e.g., pelatihan-digital-marketing-umkm"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <p class="text-xs text-gray-500 mt-1">URL friendly, gunakan huruf kecil dan tanda hubung (-).</p>
+                        <input type="text" name="title" id="input-article-title" required value="${initialTitle}" placeholder="Tulis judul berita di sini..."
+                            class="w-full text-xl sm:text-2xl font-bold text-gray-900 placeholder-gray-300 border-0 focus:outline-none focus:ring-0 p-0 bg-transparent">
+                        <p class="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-100">Gunakan judul informatif tanpa clickbait berlebihan.</p>
+                        
+                        <!-- Slug Field (Auto-sync) -->
+                        <div class="mt-3 flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                            <span class="font-medium text-gray-400">URL Slug:</span>
+                            <span class="text-gray-400">#/artikel/</span>
+                            <input type="text" name="slug" id="input-article-slug" required value="${article?.slug || ''}" placeholder="judul-berita-otomatis"
+                                class="flex-1 bg-transparent border-0 p-0 text-xs text-indigo-600 font-mono focus:outline-none focus:ring-0">
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Excerpt *</label>
-                        <textarea name="excerpt" required rows="3" placeholder="e.g., Suar Indonesia mengadakan pelatihan digital marketing untuk membantu UMKM..."
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">${article?.excerpt || ''}</textarea>
-                        <p class="text-xs text-gray-500 mt-1">Ringkasan singkat artikel yang akan muncul di kartu preview.</p>
+                    <!-- 2. KARTU PARAGRAF PEMBUKA / LEAD BERITA -->
+                    <div class="bg-white rounded-2xl border border-gray-200/90 shadow-sm p-5 sm:p-6 transition focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100">
+                        <div class="flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                            <span>Paragraf Pembuka / Ringkasan Lead Berita</span>
+                            <span id="excerpt-char-counter" class="text-gray-400 font-mono">0 karakter</span>
+                        </div>
+                        <textarea name="excerpt" id="input-article-excerpt" rows="3" required placeholder="1-2 kalimat pengantar memuat inti peristiwa yang memikat pembaca (idealnya 80-160 karakter)..."
+                            class="w-full text-sm sm:text-base text-gray-700 placeholder-gray-300 border-0 focus:outline-none focus:ring-0 p-0 bg-transparent resize-y">${initialExcerpt}</textarea>
+                        <p class="text-xs text-gray-400 mt-2">Ringkasan ini tampil di kartu beranda (terpotong rapi 2 baris) dan cuplikan mesin pencari Google.</p>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- 3. LEMBAR NASKAH LIPUTAN (MARKDOWN EDITOR + LIVE PREVIEW) -->
+                    <div class="bg-white rounded-2xl border border-gray-200/90 shadow-sm overflow-hidden">
+                        
+                        <!-- Header Toolbar & Mode Switcher -->
+                        <div class="p-4 bg-gray-50/90 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
+                            <span class="text-xs font-bold text-gray-600 uppercase tracking-wider">
+                                Lembar Naskah Liputan
+                            </span>
+
+                            <!-- Mode Switcher: Edit | Bagi | Lihat -->
+                            <div class="inline-flex rounded-lg border border-gray-300 bg-white p-0.5 text-xs font-medium">
+                                <button type="button" class="mode-tab-btn px-3 py-1 rounded-md transition ${this.editorMode === 'edit' ? 'bg-gray-900 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'}" data-mode="edit">
+                                    ✏️ Edit
+                                </button>
+                                <button type="button" class="mode-tab-btn px-3 py-1 rounded-md transition ${this.editorMode === 'split' ? 'bg-gray-900 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'}" data-mode="split">
+                                    [] Bagi
+                                </button>
+                                <button type="button" class="mode-tab-btn px-3 py-1 rounded-md transition ${this.editorMode === 'preview' ? 'bg-gray-900 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'}" data-mode="preview">
+                                    👁 Lihat
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Formatting Toolbar (Hanya aktif di mode Edit & Split) -->
+                        <div id="editor-toolbar" class="px-4 py-2 bg-white border-b border-gray-100 flex flex-wrap items-center gap-1 text-gray-700 text-sm">
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100 font-bold" data-action="bold" title="Tebal (Bold)">B</button>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100 italic" data-action="italic" title="Miring (Italic)">I</button>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100 underline" data-action="underline" title="Garis Bawah (Underline)">U</button>
+                            <div class="h-4 w-px bg-gray-200 mx-1"></div>
+                            <button type="button" class="toolbar-btn px-2 py-1 rounded hover:bg-gray-100 font-semibold text-xs" data-action="h1" title="Heading 1">H1</button>
+                            <button type="button" class="toolbar-btn px-2 py-1 rounded hover:bg-gray-100 font-semibold text-xs" data-action="h2" title="Heading 2">H2</button>
+                            <button type="button" class="toolbar-btn px-2 py-1 rounded hover:bg-gray-100 font-semibold text-xs" data-action="h3" title="Heading 3">H3</button>
+                            <div class="h-4 w-px bg-gray-200 mx-1"></div>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="ul" title="Daftar Poin">≡</button>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="ol" title="Daftar Angka">1≡</button>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100 font-serif" data-action="quote" title="Kutipan Narasumber">“”</button>
+                            <div class="h-4 w-px bg-gray-200 mx-1"></div>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="link" title="Tautan Link">🔗</button>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="image" title="Sisipkan Gambar">📷</button>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="video" title="Sisipkan Video Embed">📹</button>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="hr" title="Garis Pembatas">—</button>
+                            <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100 text-xs font-mono" data-action="dateline" title="Dateline Berita (KEDIRI, SuaR —)">📍</button>
+                        </div>
+
+                        <!-- Editor Textarea & Live Preview Body -->
+                        <div id="editor-body-container" class="grid grid-cols-1 gap-0">
+                            <!-- Textarea Markdown Input -->
+                            <div id="markdown-input-wrapper" class="p-5">
+                                <textarea name="content_markdown" id="markdown-textarea" rows="18" required
+                                    placeholder="Ketik naskah liputan di sini. Gunakan tombol toolbar atas untuk format tebal, kutipan narasumber, sub-judul, atau foto..."
+                                    class="w-full font-sans text-gray-800 placeholder-gray-400 border-0 focus:outline-none focus:ring-0 p-0 text-base leading-relaxed resize-y bg-transparent">${markdownContent}</textarea>
+                            </div>
+
+                            <!-- Live Preview Panel -->
+                            <div id="markdown-preview-wrapper" class="hidden p-6 bg-gray-50/50 border-t lg:border-t-0 lg:border-l border-gray-200 overflow-y-auto max-h-[650px]">
+                                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+                                    <span>Pratinjau Langsung (Live Preview)</span>
+                                    <span class="text-indigo-600 font-mono">Rendered HTML</span>
+                                </div>
+                                <div id="markdown-preview-content" class="prose prose-purple max-w-none">
+                                    <!-- Rendered HTML dimasukkan di sini via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KOLOM KANAN (4/12 Desktop): Sidebar Tabs (Metadata, Distribusi, SEO Google) -->
+                <div class="lg:col-span-4 space-y-4">
+                    
+                    <!-- Segmented Control Tabs Header -->
+                    <div class="bg-gray-100 p-1 rounded-2xl flex items-center justify-between text-xs font-semibold text-gray-600">
+                        <button type="button" class="sidebar-tab-trigger flex-1 py-2 rounded-xl transition ${this.activeSidebarTab === 'metadata' ? 'bg-gray-900 text-white shadow' : 'hover:text-gray-900'}" data-tab="metadata">
+                            ⚡ Metadata
+                        </button>
+                        <button type="button" class="sidebar-tab-trigger flex-1 py-2 rounded-xl transition ${this.activeSidebarTab === 'distribution' ? 'bg-gray-900 text-white shadow' : 'hover:text-gray-900'}" data-tab="distribution">
+                            📡 Distribusi
+                        </button>
+                        <button type="button" class="sidebar-tab-trigger flex-1 py-2 rounded-xl transition ${this.activeSidebarTab === 'seo' ? 'bg-gray-900 text-white shadow' : 'hover:text-gray-900'}" data-tab="seo">
+                            🔍 SEO Google
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: METADATA & FOTO SAMPUL -->
+                    <div id="tab-content-metadata" class="sidebar-tab-content bg-white rounded-2xl border border-gray-200/90 shadow-sm p-5 space-y-5">
+                        
+                        <div class="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase tracking-wider pb-2 border-b border-gray-100">
+                            <span>⚙️ Kategori & Foto Sampul</span>
+                        </div>
+
+                        <!-- Kanal & Kategori -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-                            <select name="category" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="" disabled ${!article?.category ? 'selected' : ''}>Select Category</option>
-                                <option value="berita" ${article?.category === 'berita' ? 'selected' : ''}>Berita</option>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Kanal & Kategori *</label>
+                            <select name="category" required class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="berita" ${article?.category === 'berita' || !article?.category ? 'selected' : ''}>Berita</option>
                                 <option value="program" ${article?.category === 'program' ? 'selected' : ''}>Program</option>
                                 <option value="kegiatan" ${article?.category === 'kegiatan' ? 'selected' : ''}>Kegiatan</option>
                                 <option value="artikel" ${article?.category === 'artikel' ? 'selected' : ''}>Artikel</option>
                             </select>
                         </div>
+
+                        <!-- Foto Sampul Utama (Cover) -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Date *</label>
-                            <input type="text" name="date" required value="${article?.date || ''}" placeholder="e.g., 10 November 2025"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <p class="text-xs text-gray-500 mt-1">Format: Tanggal Bulan Tahun (e.g., 17 Agustus 2024)</p>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Foto Sampul Utama (Cover) *</label>
+                            <div class="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-100 h-44 mb-3 group">
+                                <img id="cover-preview-img" src="${defaultCover}" alt="Cover Preview" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                    <span class="text-white text-xs font-medium bg-black/60 px-3 py-1.5 rounded-full">Ganti Gambar</span>
+                                </div>
+                            </div>
+                            
+                            <input type="text" name="image" id="hero-image-url" required value="${article?.image || defaultCover}" placeholder="URL Foto Sampul"
+                                class="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            
+                            <div id="hero-image-upload-widget" class="mb-3"></div>
+
+                            <input type="text" name="cover_caption" id="cover-caption" value="Dok. Redaksi SuaR Indonesia" placeholder="Kredit Foto (e.g., Dok. Redaksi)"
+                                class="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-600">
                         </div>
+
+                        <!-- Tag Topik Terkait (Chip-Style) -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Author *</label>
-                            <input type="text" name="author" required value="${article?.author || 'SuaR Indonesia'}" placeholder="e.g., Admin Suar"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="text-xs font-semibold text-gray-600">Tag Topik Terkait</label>
+                                <span class="text-[10px] text-gray-400">Tekan Enter / Koma / Tab</span>
+                            </div>
+                            
+                            <div id="tags-chip-container" class="flex flex-wrap items-center gap-1.5 p-2 bg-gray-50 border border-gray-200 rounded-xl min-h-[44px] cursor-text focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 transition">
+                                <div id="tags-list" class="flex flex-wrap gap-1.5">
+                                    ${this.tags.map((tag, idx) => `
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-900 text-white shadow-xs">
+                                            #${tag}
+                                            <button type="button" class="remove-tag-btn hover:text-red-300 transition" data-index="${idx}">✕</button>
+                                        </span>
+                                    `).join('')}
+                                </div>
+                                <input type="text" id="tag-input-field" placeholder="Tambah tag..." autocomplete="off"
+                                    class="bg-transparent text-xs text-gray-800 border-0 p-1 focus:outline-none focus:ring-0 flex-1 min-w-[100px]">
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-1">Tekan Enter, Koma, atau pindah kursor untuk menyimpan tag.</p>
+                        </div>
+
+                        <!-- Penulis (Author) -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Penulis / Kontributor *</label>
+                            <input type="text" name="author" required value="${article?.author || 'SuaR Indonesia'}" placeholder="e.g., Redaksi SuaR"
+                                class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+
+                        <!-- Tanggal Terbit -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Tanggal Terbit *</label>
+                            <input type="text" name="date" id="input-article-date" required value="${article?.date || this.formatIndonesianDate(new Date())}" placeholder="e.g., 17 Oktober 2026"
+                                class="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <p class="text-[11px] text-gray-400 mt-1">Format: 17 Oktober 2026</p>
+                        </div>
+
+                        <!-- Video URL Opsional -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Video URL (Opsional)</label>
+                            <input type="url" name="video" value="${article?.video || ''}" id="main-video-url" placeholder="YouTube / Vimeo / MP4"
+                                class="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2">
+                            <div id="main-video-upload-widget"></div>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Tags (comma separated)</label>
-                        <input type="text" name="tags" value="${article?.tags?.join(', ') || ''}" placeholder="e.g., pelatihan, umkm, digital, ekonomi"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <p class="text-xs text-gray-500 mt-1">Pisahkan kata kunci dengan koma.</p>
+                    <!-- TAB 2: DISTRIBUSI -->
+                    <div id="tab-content-distribution" class="sidebar-tab-content hidden bg-white rounded-2xl border border-gray-200/90 shadow-sm p-5 space-y-4">
+                        <div class="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase tracking-wider pb-2 border-b border-gray-100">
+                            <span>📡 Kanal Distribusi & Sindikasi</span>
+                        </div>
+                        <div class="space-y-3 text-sm text-gray-700">
+                            <label class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer hover:bg-gray-100/70">
+                                <input type="checkbox" checked class="mt-1 rounded text-indigo-600 focus:ring-indigo-500">
+                                <div>
+                                    <span class="font-semibold block text-xs text-gray-900">Portal Utama SuaR Indonesia</span>
+                                    <span class="text-xs text-gray-500">Tayang di beranda dan halaman #/berita</span>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer hover:bg-gray-100/70">
+                                <input type="checkbox" checked class="mt-1 rounded text-indigo-600 focus:ring-indigo-500">
+                                <div>
+                                    <span class="font-semibold block text-xs text-gray-900">Sindikasi Media Sosial</span>
+                                    <span class="text-xs text-gray-500">Buat cuplikan otomatis untuk WhatsApp & Facebook</span>
+                                </div>
+                            </label>
+                        </div>
                     </div>
 
-                    <!-- Hero Image -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Hero Image URL *</label>
-                        <input type="text" name="image" required value="${article?.image || ''}" id="hero-image-url" placeholder="e.g., https://example.com/image.jpg"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2">
-                        <p class="text-xs text-gray-500 mt-1">Upload gambar atau tempel URL gambar utama artikel.</p>
-                        <div id="hero-image-upload"></div>
-                    </div>
+                    <!-- TAB 3: SEO GOOGLE -->
+                    <div id="tab-content-seo" class="sidebar-tab-content hidden bg-white rounded-2xl border border-gray-200/90 shadow-sm p-5 space-y-4">
+                        <div class="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase tracking-wider pb-2 border-b border-gray-100">
+                            <span>🔍 Optimasi SEO Google</span>
+                        </div>
 
-                    <!-- Video URL (Optional) -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Video URL (Optional)</label>
-                        <input type="url" name="video" value="${article?.video || ''}" id="main-video-url" placeholder="e.g., https://example.com/video.mp4 or https://youtube.com/watch?v=..."
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <p class="text-xs text-gray-500 mt-1">Tambahkan video untuk ditampilkan di artikel. Support: .mp4, .webm, YouTube, Vimeo.</p>
-                        <div id="main-video-upload"></div>
-                    </div>
-
-                    <!-- Content Sections -->
-                    <div>
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-                            <label class="block text-sm font-medium text-gray-700">Content Sections</label>
-                            <div class="flex flex-wrap gap-2">
-                                <button type="button" class="add-section-btn bg-gray-600 text-white px-3 py-1 rounded text-sm" data-type="paragraph">+ Text</button>
-                                <button type="button" class="add-section-btn bg-gray-600 text-white px-3 py-1 rounded text-sm" data-type="heading">+ Heading</button>
-                                <button type="button" class="add-section-btn bg-gray-600 text-white px-3 py-1 rounded text-sm" data-type="image">+ Image</button>
-                                <button type="button" class="add-section-btn bg-indigo-600 text-white px-3 py-1 rounded text-sm" data-type="video">+ Video</button>
-                                <button type="button" class="add-section-btn bg-gray-600 text-white px-3 py-1 rounded text-sm" data-type="quote">+ Quote</button>
+                        <!-- SERP Preview Card -->
+                        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <div class="text-[11px] text-gray-400 mb-1">Pratinjau Cuplikan Google:</div>
+                            <div class="text-xs text-emerald-700 truncate" id="seo-preview-url">https://suarindonesia.org/#/artikel/${article?.slug || 'judul-berita'}</div>
+                            <div class="text-sm font-semibold text-blue-700 hover:underline line-clamp-1 mt-0.5" id="seo-preview-title">
+                                ${article?.seo_title || article?.title || 'Judul Berita SuaR Indonesia'}
+                            </div>
+                            <div class="text-xs text-gray-600 line-clamp-2 mt-1" id="seo-preview-snippet">
+                                ${article?.seo_description || article?.excerpt || 'Ringkasan berita akan muncul di sini sesuai lead artikel...'}
                             </div>
                         </div>
-                        <div id="sections-container" class="space-y-4 border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-[200px]">
-                            ${this.sections.length === 0 ? '<p class="text-gray-400 text-center py-8">No sections yet. Click buttons above to add content.</p>' : ''}
+
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold text-gray-600 mb-1">
+                                <span>SEO Meta Title</span>
+                                <span id="seo-title-count" class="text-gray-400 font-mono">0/60</span>
+                            </div>
+                            <input type="text" name="seo_title" id="input-seo-title" value="${article?.seo_title || ''}" placeholder="Biarkan kosong untuk menggunakan judul utama"
+                                class="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold text-gray-600 mb-1">
+                                <span>SEO Meta Description</span>
+                                <span id="seo-desc-count" class="text-gray-400 font-mono">0/160</span>
+                            </div>
+                            <textarea name="seo_description" id="input-seo-desc" rows="3" placeholder="Biarkan kosong untuk menggunakan lead naskah"
+                                class="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y">${article?.seo_description || ''}</textarea>
                         </div>
                     </div>
 
-                    <!-- Gallery -->
-                    <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <label class="block text-sm font-medium text-gray-700">Gallery Images</label>
-                            <button type="button" id="add-gallery-btn" class="bg-gray-600 text-white px-3 py-1 rounded text-sm">+ Add Image</button>
-                        </div>
-                        <div id="gallery-container" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            ${this.gallery.length === 0 ? '<p class="text-gray-400 col-span-full text-center py-8">No gallery images</p>' : ''}
-                        </div>
+                    <!-- Auto-save notification footer -->
+                    <div class="text-[11px] text-gray-400 text-center flex items-center justify-center gap-1.5 pt-2">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span id="autosave-status-text">Draft tersimpan di peramban</span>
                     </div>
 
-                    <div class="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t">
-                        <button type="button" id="cancel-btn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 w-full sm:w-auto">Cancel</button>
-                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 w-full sm:w-auto">Save Article</button>
+                </div>
+            </form>
+
+            <!-- Modal Pratinjau Pembaca (Reader Preview Modal) -->
+            <div id="reader-preview-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+                <div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
+                    <div class="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+                        <span class="font-bold text-gray-800 text-sm flex items-center gap-2">
+                            <span>📖 Pratinjau Tampilan Pembaca Publik</span>
+                        </span>
+                        <button type="button" id="close-reader-preview-btn" class="text-gray-400 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-200 transition">✕</button>
                     </div>
-                </form>
-            </div>
-        `;
-    }
-
-    /**
-     * Render a single section
-     */
-    renderSection(section, index) {
-        const sectionDiv = document.createElement('div');
-        sectionDiv.className = 'section-item bg-gray-50 border border-gray-200 rounded-lg p-4 relative';
-        sectionDiv.dataset.index = index;
-
-        let content = '';
-        switch (section.type) {
-            case 'paragraph':
-                content = `
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Paragraph</label>
-                    <textarea class="section-content w-full px-3 py-2 border border-gray-300 rounded-md" rows="4">${section.content || ''}</textarea>
-                    ${section.lead ? '<label class="inline-flex items-center mt-2"><input type="checkbox" class="section-lead" checked> <span class="ml-2 text-sm">Lead paragraph</span></label>' : ''}
-                `;
-                break;
-            case 'heading':
-                content = `
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Heading</label>
-                    <input type="text" class="section-content w-full px-3 py-2 border border-gray-300 rounded-md" value="${section.content || ''}">
-                `;
-                break;
-            case 'image':
-                content = `
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Image</label>
-                    <input type="text" class="section-image-url w-full px-3 py-2 border border-gray-300 rounded-md mb-2" placeholder="Image URL" value="${section.url || ''}">
-                    <input type="text" class="section-caption w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Caption" value="${section.caption || ''}">
-                    <div class="section-image-upload mt-2"></div>
-                `;
-                break;
-            case 'video':
-                content = `
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Video</label>
-                    <input type="url" class="section-video-url w-full px-3 py-2 border border-gray-300 rounded-md mb-2" placeholder="Video URL (.mp4, .webm, YouTube, Vimeo)" value="${section.url || ''}">
-                    <input type="text" class="section-caption w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Caption (optional)" value="${section.caption || ''}">
-                    <p class="text-xs text-gray-500 mt-1">Paste direct video URL or YouTube/Vimeo link</p>
-                    <div class="section-video-upload mt-2"></div>
-                `;
-                break;
-            case 'quote':
-                content = `
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Quote</label>
-                    <textarea class="section-content w-full px-3 py-2 border border-gray-300 rounded-md mb-2" rows="3" placeholder="Quote text">${section.content || ''}</textarea>
-                    <input type="text" class="section-author w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Author (optional)" value="${section.author || ''}">
-                `;
-                break;
-        }
-
-        sectionDiv.innerHTML = `
-            <div class="flex justify-between items-start mb-2">
-                <span class="text-xs font-semibold text-gray-500 uppercase">${section.type}</span>
-                <div class="flex space-x-2">
-                    <button type="button" class="move-up text-gray-400 hover:text-gray-600" ${index === 0 ? 'disabled' : ''}>↑</button>
-                    <button type="button" class="move-down text-gray-400 hover:text-gray-600">↓</button>
-                    <button type="button" class="remove-section text-red-400 hover:text-red-600">✕</button>
+                    <div id="reader-preview-body" class="p-6 md:p-10 overflow-y-auto space-y-6">
+                        <!-- Dynamic rendered full article -->
+                    </div>
                 </div>
             </div>
-            ${content}
         `;
-
-        return sectionDiv;
     }
 
     /**
-     * Attach event listeners
+     * @description : Menghubungkan seluruh event listener untuk interaksi UI editor
+     * @param {HTMLElement} container - Kontainer elemen editor
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
      */
     attachEventListeners(container) {
-        // New Article button
+        if (!container) return;
+
+        // Navigasi Kembali ke List
+        container.querySelector('#back-to-list')?.addEventListener('click', () => {
+            this.showList();
+        });
+
+        // Tombol Buat Baru dari List
         container.querySelector('#new-article-btn')?.addEventListener('click', () => {
             this.showEditor();
         });
 
-        // Edit buttons
+        // Tombol Edit dari List
         container.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                const id = e.target.dataset.id;
+                const id = e.currentTarget.dataset.id;
                 const { data: article } = await supabase.from('articles').select('*').eq('id', id).single();
                 this.showEditor(article);
             });
         });
 
-        // Delete buttons
+        // Tombol Hapus dari List
         container.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                const confirmed = await this.customDialog.confirm('Are you sure you want to delete this article?', 'Delete Article');
+                const confirmed = await this.customDialog.confirm('Apakah Anda yakin ingin menghapus artikel ini?', 'Hapus Artikel');
                 if (!confirmed) return;
-
-                const id = e.target.dataset.id;
+                const id = e.currentTarget.dataset.id;
                 await supabase.from('articles').delete().eq('id', id);
                 this.showList();
             });
         });
 
-        // Back to list
-        container.querySelector('#back-to-list')?.addEventListener('click', () => {
-            this.showList();
+        const form = container.querySelector('#article-form');
+        if (!form) return; // Jika hanya di list view, selesai
+
+        // Cegah submit bawaan browser agar tidak memicu reload halaman
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
         });
 
-        // Add section buttons
-        container.querySelectorAll('.add-section-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const type = e.target.dataset.type;
-                this.addSection({ type, content: '' });
-            });
-        });
-
-        // Hero image upload
-        const heroUploadContainer = container.querySelector('#hero-image-upload');
-        if (heroUploadContainer) {
+        // 1. Inisialisasi Uploader Cover
+        const coverUploadContainer = container.querySelector('#hero-image-upload-widget');
+        if (coverUploadContainer) {
             const widget = this.imageUploader.createUploadWidget((url) => {
                 container.querySelector('#hero-image-url').value = url;
+                const previewImg = container.querySelector('#cover-preview-img');
+                if (previewImg) previewImg.src = url;
             });
-            heroUploadContainer.appendChild(widget);
+            coverUploadContainer.appendChild(widget);
         }
 
-        // Main video upload
-        const mainVideoUploadContainer = container.querySelector('#main-video-upload');
-        if (mainVideoUploadContainer) {
+        // 2. Inisialisasi Uploader Video Utama
+        const videoUploadContainer = container.querySelector('#main-video-upload-widget');
+        if (videoUploadContainer) {
             const widget = this.videoUploader.createUploadWidget((url) => {
                 container.querySelector('#main-video-url').value = url;
             });
-            mainVideoUploadContainer.appendChild(widget);
-        }
-
-        // Add gallery image
-        container.querySelector('#add-gallery-btn')?.addEventListener('click', () => {
-            this.addGalleryImage();
-        });
-
-        // Form submit
-        container.querySelector('#article-form')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.saveArticle(e.target);
-        });
-
-        // Cancel button
-        container.querySelector('#cancel-btn')?.addEventListener('click', () => {
-            this.showList();
-        });
-
-        // Render existing sections
-        if (this.sections.length > 0) {
-            this.renderAllSections();
-        }
-
-        // Render existing gallery
-        if (this.gallery.length > 0) {
-            this.renderGallery();
-        }
-    }
-
-    addSection(section) {
-        this.sections.push(section);
-        this.renderAllSections();
-    }
-
-    /**
-     * Capture current form values from all sections before re-rendering
-     */
-    captureFormValues() {
-        const container = document.getElementById('sections-container');
-        if (!container) return [];
-
-        const values = [];
-        const sectionElements = container.querySelectorAll('.section-item');
-
-        sectionElements.forEach((sectionEl, index) => {
-            const sectionData = {};
-            const type = this.sections[index]?.type;
-
-            switch (type) {
-                case 'paragraph':
-                    sectionData.content = sectionEl.querySelector('.section-content')?.value || '';
-                    sectionData.lead = sectionEl.querySelector('.section-lead')?.checked || false;
-                    break;
-
-                case 'heading':
-                    sectionData.content = sectionEl.querySelector('.section-content')?.value || '';
-                    break;
-
-                case 'image':
-                    sectionData.url = sectionEl.querySelector('.section-image-url')?.value || '';
-                    sectionData.caption = sectionEl.querySelector('.section-caption')?.value || '';
-                    break;
-
-                case 'video':
-                    sectionData.url = sectionEl.querySelector('.section-video-url')?.value || '';
-                    sectionData.caption = sectionEl.querySelector('.section-caption')?.value || '';
-                    break;
-
-                case 'quote':
-                    sectionData.content = sectionEl.querySelector('.section-content')?.value || '';
-                    sectionData.author = sectionEl.querySelector('.section-author')?.value || '';
-                    break;
-            }
-
-            values.push(sectionData);
-        });
-
-        return values;
-    }
-
-    /**
-     * Render all sections - values are synced before mutation in event handlers
-     */
-    renderAllSections() {
-        const container = document.getElementById('sections-container');
-        if (!container) return;
-
-        // Clear container
-        container.innerHTML = '';
-
-        // Re-render with current values from this.sections
-        this.sections.forEach((section, index) => {
-            const sectionEl = this.renderSection(section, index);
-            container.appendChild(sectionEl);
-
-            // Attach section-specific listeners
-            this.attachSectionListeners(sectionEl, index);
-        });
-    }
-
-    attachSectionListeners(sectionEl, index) {
-        // Move up - sync values first, then get fresh index from DOM
-        sectionEl.querySelector('.move-up')?.addEventListener('click', () => {
-            this.syncSectionsFromDOM(); // Simpan nilai form sebelum mutasi
-            const currentIndex = parseInt(sectionEl.dataset.index, 10); // Ambil index terbaru dari DOM
-            if (currentIndex > 0) {
-                [this.sections[currentIndex - 1], this.sections[currentIndex]] = [this.sections[currentIndex], this.sections[currentIndex - 1]];
-                this.renderAllSections();
-            }
-        });
-
-        // Move down - sync values first, then get fresh index from DOM
-        sectionEl.querySelector('.move-down')?.addEventListener('click', () => {
-            this.syncSectionsFromDOM(); // Simpan nilai form sebelum mutasi
-            const currentIndex = parseInt(sectionEl.dataset.index, 10); // Ambil index terbaru dari DOM
-            if (currentIndex < this.sections.length - 1) {
-                [this.sections[currentIndex], this.sections[currentIndex + 1]] = [this.sections[currentIndex + 1], this.sections[currentIndex]];
-                this.renderAllSections();
-            }
-        });
-
-        // Remove - sync values first, then get fresh index from DOM
-        sectionEl.querySelector('.remove-section')?.addEventListener('click', () => {
-            this.syncSectionsFromDOM(); // Simpan nilai form sebelum mutasi
-            const currentIndex = parseInt(sectionEl.dataset.index, 10); // Ambil index terbaru dari DOM
-            this.sections.splice(currentIndex, 1);
-            this.renderAllSections();
-        });
-
-        // Image upload for image sections
-        const imageUploadContainer = sectionEl.querySelector('.section-image-upload');
-        if (imageUploadContainer) {
-            const widget = this.imageUploader.createUploadWidget((url) => {
-                sectionEl.querySelector('.section-image-url').value = url;
-            });
-            imageUploadContainer.appendChild(widget);
-        }
-
-        // Video upload for video sections
-        const videoUploadContainer = sectionEl.querySelector('.section-video-upload');
-        if (videoUploadContainer) {
-            const widget = this.videoUploader.createUploadWidget((url) => {
-                sectionEl.querySelector('.section-video-url').value = url;
-            });
             videoUploadContainer.appendChild(widget);
         }
+
+        // 3. Realtime Character Counters & Auto-Slug
+        const titleInput = container.querySelector('#input-article-title');
+        const slugInput = container.querySelector('#input-article-slug');
+        const excerptInput = container.querySelector('#input-article-excerpt');
+        const titleCounter = container.querySelector('#title-char-counter');
+        const excerptCounter = container.querySelector('#excerpt-char-counter');
+        const markdownTextarea = container.querySelector('#markdown-textarea');
+
+        const updateStats = () => {
+            const titleVal = titleInput?.value || '';
+            const excerptVal = excerptInput?.value || '';
+            const markdownVal = markdownTextarea?.value || '';
+
+            // Title counter (0/70)
+            if (titleCounter) {
+                titleCounter.textContent = `${titleVal.length}/70 karakter`;
+                titleCounter.className = titleVal.length > 70 
+                    ? 'text-red-500 font-mono font-bold' 
+                    : 'text-gray-400 font-mono';
+            }
+
+            // Excerpt counter (0/160)
+            if (excerptCounter) {
+                excerptCounter.textContent = `${excerptVal.length}/160 karakter`;
+                excerptCounter.className = excerptVal.length > 160 
+                    ? 'text-amber-500 font-mono font-bold' 
+                    : 'text-gray-400 font-mono';
+            }
+
+            // Word count & Read time
+            const totalWords = (markdownVal.trim().match(/\S+/g) || []).length;
+            const readMinutes = Math.max(1, Math.ceil(totalWords / 180));
+            
+            const wordCountEl = container.querySelector('#stat-word-count');
+            const readTimeEl = container.querySelector('#stat-read-time');
+            if (wordCountEl) wordCountEl.textContent = `📄 ${totalWords} kata`;
+            if (readTimeEl) readTimeEl.textContent = `⏱ ~${readMinutes} mnt baca`;
+
+            // Update Live Preview jika panel terlihat
+            this.updateLivePreview(container);
+
+            // Update SEO Card & Counters
+            const seoTitleInput = container.querySelector('#input-seo-title');
+            const seoDescInput = container.querySelector('#input-seo-desc');
+            const seoTitleCount = container.querySelector('#seo-title-count');
+            const seoDescCount = container.querySelector('#seo-desc-count');
+
+            if (seoTitleCount && seoTitleInput) {
+                seoTitleCount.textContent = `${seoTitleInput.value.length}/60`;
+                seoTitleCount.className = seoTitleInput.value.length > 60 ? 'text-red-500 font-mono font-bold' : 'text-gray-400 font-mono';
+            }
+            if (seoDescCount && seoDescInput) {
+                seoDescCount.textContent = `${seoDescInput.value.length}/160`;
+                seoDescCount.className = seoDescInput.value.length > 160 ? 'text-amber-500 font-mono font-bold' : 'text-gray-400 font-mono';
+            }
+
+            this.updateSeoPreview(container);
+        };
+
+        titleInput?.addEventListener('input', () => {
+            // Auto generate slug jika artikel baru atau belum diedit manual
+            if (!this.currentArticle && slugInput) {
+                slugInput.value = this.generateSlug(titleInput.value);
+            }
+            updateStats();
+        });
+
+        excerptInput?.addEventListener('input', updateStats);
+        markdownTextarea?.addEventListener('input', updateStats);
+        container.querySelector('#input-seo-title')?.addEventListener('input', updateStats);
+        container.querySelector('#input-seo-desc')?.addEventListener('input', updateStats);
+
+        // 4. Mode Switcher (Edit | Bagi | Lihat)
+        container.querySelectorAll('.mode-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const mode = e.currentTarget.dataset.mode;
+                this.setEditorMode(mode, container);
+            });
+        });
+
+        // 5. Toolbar Formatting Actions
+        container.querySelectorAll('.toolbar-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const action = e.currentTarget.dataset.action;
+                this.applyToolbarAction(action, markdownTextarea);
+                updateStats();
+            });
+        });
+
+        // 6. Sidebar Tab Switcher (Metadata | Distribusi | SEO Google)
+        container.querySelectorAll('.sidebar-tab-trigger').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tab = e.currentTarget.dataset.tab;
+                this.setSidebarTab(tab, container);
+            });
+        });
+
+        // 7. Chip Tags Management
+        const tagsContainer = container.querySelector('#tags-chip-container');
+        const tagInput = tagsContainer?.querySelector('#tag-input-field');
+
+        // Klik area container otomatis memfokuskan input field
+        tagsContainer?.addEventListener('click', (e) => {
+            if (e.target === tagsContainer || e.target.id === 'tags-list') {
+                tagInput?.focus();
+            }
+        });
+
+        const addTag = (rawText) => {
+            if (!rawText) return;
+            // Dukung input beruntun atau paste teks berpemisah koma/titik koma/newline
+            const parts = String(rawText).split(/[,;\n]+/);
+            let hasAdded = false;
+
+            parts.forEach(part => {
+                const clean = part.replace(/^#+/, '').replace(/[, ]+$/, '').trim().toLowerCase();
+                if (clean && !this.tags.includes(clean)) {
+                    this.tags.push(clean);
+                    hasAdded = true;
+                }
+            });
+
+            if (hasAdded) {
+                this.renderTagChips(tagsContainer);
+            }
+            if (tagInput) {
+                tagInput.value = '';
+                tagInput.focus();
+            }
+        };
+
+        // Keydown listener dengan event delegation agar tetap tangguh
+        tagsContainer?.addEventListener('keydown', (e) => {
+            const target = e.target;
+            if (target && target.id === 'tag-input-field') {
+                if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addTag(target.value);
+                } else if (e.key === 'Backspace' && !target.value && this.tags.length > 0) {
+                    this.tags.pop();
+                    this.renderTagChips(tagsContainer);
+                }
+            }
+        });
+
+        // Blur / focusout: jika user mengetik teks lalu klik ke tempat lain tanpa menekan Enter, otomatis simpan tag
+        tagsContainer?.addEventListener('focusout', (e) => {
+            const target = e.target;
+            if (target && target.id === 'tag-input-field' && target.value.trim()) {
+                addTag(target.value);
+            }
+        });
+
+        // Hapus tag chip via event delegation
+        tagsContainer?.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-tag-btn');
+            if (removeBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const idx = parseInt(removeBtn.dataset.index, 10);
+                if (!isNaN(idx) && idx >= 0 && idx < this.tags.length) {
+                    this.tags.splice(idx, 1);
+                    this.renderTagChips(tagsContainer);
+                    tagInput?.focus();
+                }
+            }
+        });
+
+        // 8. Tombol Simpan Draf
+        container.querySelector('#btn-save-draft')?.addEventListener('click', () => {
+            this.saveArticle(form, 'draft');
+        });
+
+        // 9. Tombol Terbitkan Langsung
+        container.querySelector('#btn-publish-direct')?.addEventListener('click', () => {
+            this.saveArticle(form, 'published');
+        });
+
+        // 10. Tombol Pratinjau Pembaca Modal
+        container.querySelector('#btn-reader-preview')?.addEventListener('click', () => {
+            this.openReaderPreviewModal(container);
+        });
+
+        container.querySelector('#close-reader-preview-btn')?.addEventListener('click', () => {
+            container.querySelector('#reader-preview-modal')?.classList.add('hidden');
+        });
+
+        // Jalankan kalkulasi awal
+        updateStats();
     }
 
     /**
-     * Sync this.sections array with current DOM form values
-     * Harus dipanggil SEBELUM operasi mutasi array (delete, move)
-     * untuk memastikan nilai form tersimpan dengan benar
+     * @description : Mengatur mode tampilan editor (edit penuh, split live preview, atau preview penuh)
+     * @param {'edit'|'split'|'preview'} mode - Mode editor
+     * @param {HTMLElement} container - Kontainer editor
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
      */
-    syncSectionsFromDOM() {
-        const container = document.getElementById('sections-container');
-        if (!container) return;
+    setEditorMode(mode, container) {
+        this.editorMode = mode;
+        const inputWrapper = container.querySelector('#markdown-input-wrapper');
+        const previewWrapper = container.querySelector('#markdown-preview-wrapper');
+        const editorBody = container.querySelector('#editor-body-container');
+        const toolbar = container.querySelector('#editor-toolbar');
 
-        const sectionElements = container.querySelectorAll('.section-item');
-
-        sectionElements.forEach((sectionEl) => {
-            // Ambil index dari attribute DOM (selalu akurat)
-            const index = parseInt(sectionEl.dataset.index, 10);
-            if (isNaN(index) || !this.sections[index]) return;
-
-            const type = this.sections[index].type;
-
-            // Update this.sections dengan nilai terbaru dari form
-            switch (type) {
-                case 'paragraph':
-                    this.sections[index].content = sectionEl.querySelector('.section-content')?.value || '';
-                    this.sections[index].lead = sectionEl.querySelector('.section-lead')?.checked || false;
-                    break;
-                case 'heading':
-                    this.sections[index].content = sectionEl.querySelector('.section-content')?.value || '';
-                    break;
-                case 'image':
-                    this.sections[index].url = sectionEl.querySelector('.section-image-url')?.value || '';
-                    this.sections[index].caption = sectionEl.querySelector('.section-caption')?.value || '';
-                    break;
-                case 'video':
-                    this.sections[index].url = sectionEl.querySelector('.section-video-url')?.value || '';
-                    this.sections[index].caption = sectionEl.querySelector('.section-caption')?.value || '';
-                    break;
-                case 'quote':
-                    this.sections[index].content = sectionEl.querySelector('.section-content')?.value || '';
-                    this.sections[index].author = sectionEl.querySelector('.section-author')?.value || '';
-                    break;
+        // Update button states
+        container.querySelectorAll('.mode-tab-btn').forEach(b => {
+            if (b.dataset.mode === mode) {
+                b.className = 'mode-tab-btn px-3 py-1 rounded-md transition bg-gray-900 text-white shadow-xs';
+            } else {
+                b.className = 'mode-tab-btn px-3 py-1 rounded-md transition text-gray-600 hover:text-gray-900';
             }
         });
+
+        if (mode === 'edit') {
+            editorBody.className = 'grid grid-cols-1 gap-0';
+            inputWrapper.classList.remove('hidden');
+            previewWrapper.classList.add('hidden');
+            toolbar.classList.remove('hidden');
+        } else if (mode === 'split') {
+            editorBody.className = 'grid grid-cols-1 lg:grid-cols-2 gap-0';
+            inputWrapper.classList.remove('hidden');
+            previewWrapper.classList.remove('hidden');
+            toolbar.classList.remove('hidden');
+            this.updateLivePreview(container);
+        } else if (mode === 'preview') {
+            editorBody.className = 'grid grid-cols-1 gap-0';
+            inputWrapper.classList.add('hidden');
+            previewWrapper.classList.remove('hidden');
+            toolbar.classList.add('hidden');
+            this.updateLivePreview(container);
+        }
     }
 
-    addGalleryImage() {
-        const container = document.getElementById('gallery-container');
+    /**
+     * @description : Mengganti tab aktif di sidebar kanan (Metadata, Distribusi, SEO Google)
+     * @param {string} tabId - ID tab yang dipilih
+     * @param {HTMLElement} container - Kontainer editor
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
+    setSidebarTab(tabId, container) {
+        this.activeSidebarTab = tabId;
+
+        // Update tab buttons
+        container.querySelectorAll('.sidebar-tab-trigger').forEach(btn => {
+            if (btn.dataset.tab === tabId) {
+                btn.className = 'sidebar-tab-trigger flex-1 py-2 rounded-xl transition bg-gray-900 text-white shadow';
+            } else {
+                btn.className = 'sidebar-tab-trigger flex-1 py-2 rounded-xl transition hover:text-gray-900 text-gray-600';
+            }
+        });
+
+        // Hide all, show targeted
+        container.querySelectorAll('.sidebar-tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+        const target = container.querySelector(`#tab-content-${tabId}`);
+        if (target) target.classList.remove('hidden');
+    }
+
+    /**
+     * @description : Render chip-tag interaktif di sidebar tanpa menghancurkan elemen input di DOM
+     * @param {HTMLElement} container - Kontainer chip tag
+     * @returns {void}
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
+    renderTagChips(container) {
         if (!container) return;
+        let list = container.querySelector('#tags-list');
 
-        const index = this.gallery.length;
+        // Pastikan container memiliki #tags-list permanen tanpa menghancurkan #tag-input-field
+        if (!list) {
+            list = document.createElement('div');
+            list.id = 'tags-list';
+            list.className = 'flex flex-wrap gap-1.5';
+            const inputField = container.querySelector('#tag-input-field');
+            if (inputField) {
+                container.insertBefore(list, inputField);
+            } else {
+                container.prepend(list);
+            }
+        }
 
-        const imageDiv = document.createElement('div');
-        imageDiv.className = 'relative border-2 border-dashed border-gray-300 rounded-lg p-4';
-        imageDiv.innerHTML = `
-            <input type="text" class="gallery-url w-full px-2 py-1 border border-gray-300 rounded text-sm mb-2" placeholder="Image URL">
-            <input type="text" class="gallery-caption w-full px-2 py-1 border border-gray-300 rounded text-sm mb-2" placeholder="Caption">
-            <div class="gallery-upload"></div>
-            <button type="button" class="remove-gallery absolute top-2 right-2 text-red-500 hover:text-red-700">✕</button>
+        const chipsHtml = this.tags.map((tag, idx) => `
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-900 text-white shadow-xs">
+                #${tag}
+                <button type="button" class="remove-tag-btn hover:text-red-300 transition" data-index="${idx}">✕</button>
+            </span>
+        `).join('');
+
+        // HANYA update innerHTML milik list, jangan pernah sentuh atau replace container.innerHTML!
+        list.innerHTML = chipsHtml;
+    }
+
+    /**
+     * @description : Menerapkan format Markdown ke posisi kursor di textarea
+     * @param {string} action - Aksi formatting (bold, italic, h1, link, dll)
+     * @param {HTMLTextAreaElement} textarea - Elemen textarea
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
+    applyToolbarAction(action, textarea) {
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        const selected = text.substring(start, end);
+
+        let replacement = '';
+        let cursorOffset = 0;
+
+        switch (action) {
+            case 'bold':
+                replacement = `**${selected || 'teks tebal'}**`;
+                cursorOffset = selected ? replacement.length : 2;
+                break;
+            case 'italic':
+                replacement = `*${selected || 'teks miring'}*`;
+                cursorOffset = selected ? replacement.length : 1;
+                break;
+            case 'underline':
+                replacement = `<u>${selected || 'garis bawah'}</u>`;
+                cursorOffset = selected ? replacement.length : 3;
+                break;
+            case 'h1':
+                replacement = `\n# ${selected || 'Judul Utama'}\n`;
+                cursorOffset = replacement.length;
+                break;
+            case 'h2':
+                replacement = `\n## ${selected || 'Sub Judul Bagian'}\n`;
+                cursorOffset = replacement.length;
+                break;
+            case 'h3':
+                replacement = `\n### ${selected || 'Poin Pembahasan'}\n`;
+                cursorOffset = replacement.length;
+                break;
+            case 'ul':
+                replacement = `\n- ${selected || 'Item poin'}\n- Item poin kedua\n`;
+                cursorOffset = replacement.length;
+                break;
+            case 'ol':
+                replacement = `\n1. ${selected || 'Langkah pertama'}\n2. Langkah kedua\n`;
+                cursorOffset = replacement.length;
+                break;
+            case 'quote':
+                replacement = `\n> "${selected || 'Kutipan penting dari narasumber'}"\n> — *Nama Tokoh*\n`;
+                cursorOffset = replacement.length;
+                break;
+            case 'link':
+                replacement = `[${selected || 'Teks tautan'}](https://example.com)`;
+                cursorOffset = replacement.length - 1;
+                break;
+            case 'image':
+                const promptUrl = prompt('Masukkan URL Gambar (atau unggah via sidebar):', 'https://');
+                if (promptUrl) {
+                    replacement = `\n![${selected || 'Keterangan foto'}](${promptUrl})\n*Keterangan foto dokumentasi*\n`;
+                }
+                break;
+            case 'video':
+                const videoUrl = prompt('Masukkan URL Video (YouTube/Vimeo/MP4):', 'https://www.youtube.com/watch?v=');
+                if (videoUrl) {
+                    replacement = `\n@[video](${videoUrl})\n`;
+                }
+                break;
+            case 'hr':
+                replacement = `\n\n---\n\n`;
+                cursorOffset = replacement.length;
+                break;
+            case 'dateline':
+                replacement = `**KEDIRI, SuaR Indonesia** — `;
+                cursorOffset = replacement.length;
+                break;
+        }
+
+        if (replacement) {
+            textarea.value = text.substring(0, start) + replacement + text.substring(end);
+            textarea.focus();
+            textarea.setSelectionRange(start + cursorOffset, start + cursorOffset);
+        }
+    }
+
+    /**
+     * @description : Memperbarui tampilan live preview Markdown
+     * @param {HTMLElement} container - Kontainer editor
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
+    updateLivePreview(container) {
+        const previewContent = container.querySelector('#markdown-preview-content');
+        const textarea = container.querySelector('#markdown-textarea');
+        if (!previewContent || !textarea) return;
+
+        const rawMarkdown = textarea.value || '';
+        const marked = this.getMarkedParser();
+        const parsed = marked.parse(rawMarkdown);
+        previewContent.innerHTML = this.sanitizeHtml(parsed);
+    }
+
+    /**
+     * @description : Memperbarui cuplikan Google SERP di tab SEO
+     * @param {HTMLElement} container - Kontainer editor
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
+    updateSeoPreview(container) {
+        const titleInput = container.querySelector('#input-article-title');
+        const excerptInput = container.querySelector('#input-article-excerpt');
+        const slugInput = container.querySelector('#input-article-slug');
+        const seoTitleInput = container.querySelector('#input-seo-title');
+        const seoDescInput = container.querySelector('#input-seo-desc');
+
+        const serpTitle = container.querySelector('#seo-preview-title');
+        const serpSnippet = container.querySelector('#seo-preview-snippet');
+        const serpUrl = container.querySelector('#seo-preview-url');
+
+        const activeTitle = seoTitleInput?.value || titleInput?.value || 'Judul Berita SuaR Indonesia';
+        const activeDesc = seoDescInput?.value || excerptInput?.value || 'Ringkasan berita akan muncul di sini sesuai lead naskah...';
+        const activeSlug = slugInput?.value || 'judul-berita';
+
+        if (serpTitle) serpTitle.textContent = activeTitle;
+        if (serpSnippet) serpSnippet.textContent = activeDesc;
+        if (serpUrl) serpUrl.textContent = `https://suarindonesia.org/#/artikel/${activeSlug}`;
+    }
+
+    /**
+     * @description : Menampilkan modal pratinjau pembaca publik
+     * @param {HTMLElement} container - Kontainer editor
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
+    openReaderPreviewModal(container) {
+        const modal = container.querySelector('#reader-preview-modal');
+        const previewBody = container.querySelector('#reader-preview-body');
+        if (!modal || !previewBody) return;
+
+        const rawTitle = container.querySelector('#input-article-title')?.value || 'Judul Belum Diisi';
+        const rawExcerpt = container.querySelector('#input-article-excerpt')?.value || '';
+        const rawCategory = container.querySelector('select[name="category"]')?.value || 'berita';
+        const rawAuthor = container.querySelector('input[name="author"]')?.value || 'SuaR Indonesia';
+        const rawDate = container.querySelector('#input-article-date')?.value || this.formatIndonesianDate(new Date());
+        const rawCover = container.querySelector('#hero-image-url')?.value || '';
+        const rawMarkdown = container.querySelector('#markdown-textarea')?.value || '';
+
+        // Sanitasi seluruh teks dinamis menggunakan DOMPurify untuk mencegah XSS
+        const title = this.sanitizeHtml(rawTitle);
+        const excerpt = this.sanitizeHtml(rawExcerpt);
+        const category = this.sanitizeHtml(rawCategory);
+        const author = this.sanitizeHtml(rawAuthor);
+        const date = this.sanitizeHtml(rawDate);
+        const cover = encodeURI(rawCover.trim());
+
+        const marked = this.getMarkedParser();
+        const parsedBody = this.sanitizeHtml(marked.parse(rawMarkdown));
+
+        previewBody.innerHTML = `
+            <div class="max-w-3xl mx-auto space-y-6">
+                <!-- Kategori & Meta -->
+                <div class="flex items-center gap-3">
+                    <span class="px-3 py-1 bg-purple-600 text-white text-xs font-bold rounded-full uppercase tracking-wider">
+                        ${category}
+                    </span>
+                    <span class="text-xs text-gray-500">${date}</span>
+                    <span class="text-xs text-gray-500">• Oleh ${author}</span>
+                </div>
+
+                <!-- Judul Utama -->
+                <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight">
+                    ${title}
+                </h1>
+
+                <!-- Lead Paragraph -->
+                ${excerpt ? `
+                    <div class="text-lg text-gray-700 font-medium italic border-l-4 border-purple-600 pl-4 py-1 bg-purple-50/50 rounded-r-lg">
+                        ${excerpt}
+                    </div>
+                ` : ''}
+
+                <!-- Cover Image -->
+                ${cover ? `
+                    <figure class="rounded-2xl overflow-hidden shadow-lg my-6">
+                        <img src="${cover}" alt="${title}" class="w-full max-h-[450px] object-cover">
+                    </figure>
+                ` : ''}
+
+                <!-- Body Naskah Markdown -->
+                <article class="prose prose-lg prose-purple max-w-none text-gray-800 leading-relaxed">
+                    ${parsedBody}
+                </article>
+
+                <!-- Tags -->
+                ${this.tags.length > 0 ? `
+                    <div class="pt-6 border-t border-gray-100 flex flex-wrap gap-2">
+                        ${this.tags.map(t => `
+                            <span class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full">
+                                #${t}
+                            </span>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>
         `;
 
-        const uploadContainer = imageDiv.querySelector('.gallery-upload');
-        const widget = this.imageUploader.createUploadWidget((url) => {
-            imageDiv.querySelector('.gallery-url').value = url;
-        });
-        uploadContainer.appendChild(widget);
-
-        imageDiv.querySelector('.remove-gallery').addEventListener('click', () => {
-            imageDiv.remove();
-        });
-
-        container.appendChild(imageDiv);
-        this.gallery.push({ url: '', caption: '' });
+        modal.classList.remove('hidden');
     }
 
-    renderGallery() {
-        const container = document.getElementById('gallery-container');
-        if (!container) return;
-        container.innerHTML = '';
-        this.gallery.forEach(() => this.addGalleryImage());
+    /**
+     * @description : Membuat slug URL ramah SEO dari judul teks
+     * @param {string} text - Teks judul
+     * @returns {string} Slug URL bersih
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
+    generateSlug(text) {
+        return (text || '')
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
     }
 
-    async saveArticle(form) {
+    /**
+     * @description : Menyimpan artikel ke database Supabase (Draf atau Terbit Langsung)
+     * @param {HTMLFormElement} form - Elemen form artikel
+     * @param {'draft'|'published'} targetStatus - Status target artikel
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
+    async saveArticle(form, targetStatus = 'published') {
         const formData = new FormData(form);
 
-        // Collect sections data
-        const sectionsContainer = document.getElementById('sections-container');
-        const sectionElements = sectionsContainer.querySelectorAll('.section-item');
-        const sections = Array.from(sectionElements).map(el => {
-            const type = el.querySelector('.text-xs').textContent.toLowerCase();
-            const section = { type };
+        const title = (formData.get('title') || '').trim();
+        let slug = (formData.get('slug') || '').trim();
+        const excerpt = (formData.get('excerpt') || '').trim();
+        const markdown = (formData.get('content_markdown') || '').trim();
 
-            switch (type) {
-                case 'paragraph':
-                    section.content = el.querySelector('.section-content').value;
-                    section.lead = el.querySelector('.section-lead')?.checked || false;
-                    break;
-                case 'heading':
-                    section.content = el.querySelector('.section-content').value;
-                    break;
-                case 'image':
-                    section.url = el.querySelector('.section-image-url').value;
-                    section.caption = el.querySelector('.section-caption').value;
-                    break;
-                case 'video':
-                    section.url = el.querySelector('.section-video-url').value;
-                    section.caption = el.querySelector('.section-caption').value;
-                    break;
-                case 'quote':
-                    section.content = el.querySelector('.section-content').value;
-                    section.author = el.querySelector('.section-author').value;
-                    break;
-            }
+        // Validasi
+        if (!title) {
+            await this.customDialog.alert('Judul berita utama wajib diisi!', 'Peringatan');
+            return;
+        }
 
-            return section;
-        });
+        if (!slug) {
+            slug = this.generateSlug(title);
+        }
 
-        // Collect gallery data
-        const galleryElements = document.querySelectorAll('#gallery-container > div');
-        const gallery = Array.from(galleryElements).map(el => ({
-            url: el.querySelector('.gallery-url').value,
-            caption: el.querySelector('.gallery-caption').value
-        })).filter(img => img.url);
+        if (targetStatus === 'published' && !markdown) {
+            await this.customDialog.alert('Naskah liputan artikel masih kosong!', 'Peringatan');
+            return;
+        }
 
-        const tagsText = formData.get('tags') || '';
+        // Kalkulasi kata dan estimasi waktu baca
+        const totalWords = (markdown.match(/\S+/g) || []).length;
+        const readTime = `${Math.max(1, Math.ceil(totalWords / 180))} min read`;
 
+        // Susun objek data artikel
         const articleData = {
-            slug: formData.get('slug') || '',
-            title: formData.get('title') || '',
-            excerpt: formData.get('excerpt') || '',
-            content: sections,
+            slug: slug,
+            title: title,
+            excerpt: excerpt,
+            content_markdown: markdown,
+            content: [{ type: 'paragraph', content: markdown }], // Backward compatibility
             image: formData.get('image') || '',
             video: formData.get('video') || '',
-            date: formData.get('date') || '',
+            date: formData.get('date') || this.formatIndonesianDate(new Date()),
             author: formData.get('author') || 'SuaR Indonesia',
             category: formData.get('category') || 'berita',
-            read_time: '3 min read', // Could be calculated
-            tags: tagsText.split(',').map(t => t.trim()).filter(t => t),
-            gallery: gallery
+            read_time: readTime,
+            tags: this.tags,
+            gallery: this.gallery,
+            status: targetStatus,
+            seo_title: formData.get('seo_title') || '',
+            seo_description: formData.get('seo_description') || '',
+            seo_keywords: this.tags
         };
+
+        if (targetStatus === 'published' && (!this.currentArticle || this.currentArticle.status !== 'published')) {
+            articleData.published_at = new Date().toISOString();
+        }
 
         try {
             if (this.currentArticle) {
                 // Update
-                await supabase.from('articles').update(articleData).eq('id', this.currentArticle.id);
+                const { error } = await supabase.from('articles').update(articleData).eq('id', this.currentArticle.id);
+                if (error) throw error;
             } else {
                 // Insert
-                await supabase.from('articles').insert([articleData]);
+                const { error } = await supabase.from('articles').insert([articleData]);
+                if (error) throw error;
             }
 
-            await this.customDialog.alert('Article saved successfully!', 'Success');
+            const successMsg = targetStatus === 'published' 
+                ? 'Artikel berhasil diterbitkan secara publik!' 
+                : 'Draf artikel berhasil disimpan di redaksi.';
+            
+            await this.customDialog.alert(successMsg, 'Sukses');
             this.showList();
         } catch (error) {
-            await this.customDialog.alert('Error saving article: ' + error.message, 'Error');
+            console.warn('Initial save attempt failed:', error);
+
+            // Cek jika error disebabkan kolom baru belum dimigrasi di remote Supabase
+            if (error?.message && (error.message.includes('does not exist') || error.message.includes('column'))) {
+                try {
+                    // Fallback: Simpan hanya kolom legacy yang pasti ada di Supabase
+                    const legacyArticleData = {
+                        slug: articleData.slug,
+                        title: articleData.title,
+                        excerpt: articleData.excerpt,
+                        content: articleData.content, // JSONB sections
+                        image: articleData.image,
+                        video: articleData.video,
+                        date: articleData.date,
+                        author: articleData.author,
+                        category: articleData.category,
+                        read_time: articleData.read_time,
+                        tags: articleData.tags,
+                        gallery: articleData.gallery
+                    };
+
+                    if (this.currentArticle) {
+                        const { error: retryError } = await supabase.from('articles').update(legacyArticleData).eq('id', this.currentArticle.id);
+                        if (retryError) throw retryError;
+                    } else {
+                        const { error: retryError } = await supabase.from('articles').insert([legacyArticleData]);
+                        if (retryError) throw retryError;
+                    }
+
+                    await this.customDialog.alert(
+                        'Artikel berhasil disimpan dalam mode kompatibilitas!\n\nCatatan: Jalankan skrip di admin/supabase_schema.sql pada Supabase SQL Editor untuk mengaktifkan kolom status & markdown.',
+                        'Tersimpan (Mode Kompatibilitas)'
+                    );
+                    this.showList();
+                    return;
+                } catch (retryErr) {
+                    console.error('Retry save error:', retryErr);
+                }
+            }
+
+            await this.customDialog.alert('Terjadi kesalahan saat menyimpan artikel: ' + error.message, 'Gagal Menyimpan');
         }
     }
 
+    /**
+     * @description : Menampilkan view list artikel di kontainer admin
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
     async showList() {
         let container = document.getElementById('app-content-berita');
         if (!container) {
-            // Fallback: find the parent content section
             const parent = document.getElementById('berita');
             if (parent) {
                 container = document.createElement('div');
@@ -646,10 +1292,15 @@ export class ArticleEditor {
         }
     }
 
+    /**
+     * @description : Menampilkan view editor artikel di kontainer admin
+     * @param {Object|null} article - Objek artikel bila mengedit
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
     showEditor(article = null) {
         let container = document.getElementById('app-content-berita');
         if (!container) {
-            // Fallback: find the parent content section
             const parent = document.getElementById('berita');
             if (parent) {
                 container = document.createElement('div');

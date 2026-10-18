@@ -95,6 +95,13 @@
     <script type="module">
         import { supabase } from '../js/services/supabase-client.js';
 
+        // [AGENT-GENERATED] Auth Guard: Mencegah eksekusi migrasi tanpa sesi admin aktif
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            alert('Akses ditolak: Anda harus login sebagai admin untuk mengakses utilitas migrasi.');
+            window.location.href = 'login.html';
+        }
+
         const logsDiv = document.getElementById('logs');
 
         function addLog(message, type = 'info') {

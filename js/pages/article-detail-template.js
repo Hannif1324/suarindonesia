@@ -123,12 +123,18 @@ export class ArticleDetailTemplate {
             className: 'py-12 md:py-16'
         });
 
-        // Build content HTML
+        // Build content HTML with 3-tier fallback (Markdown -> JSONB sections -> legacy text)
         let contentHTML = '';
+        const leadHTML = article.excerpt ? `
+            <div class="text-lg md:text-xl text-gray-700 font-medium mb-8 leading-relaxed italic border-l-4 border-purple-600 pl-4 py-2 bg-purple-50/40 rounded-r-xl">
+                ${article.excerpt}
+            </div>
+        ` : '';
 
-        // Check if article has structured sections (JSONB) or plain text content
-        if (Array.isArray(article.content)) {
-            contentHTML = this.renderSections(article.content);
+        if (article.content_markdown) {
+            contentHTML = leadHTML + this.renderMarkdownContent(article.content_markdown);
+        } else if (Array.isArray(article.content)) {
+            contentHTML = (article.excerpt ? leadHTML : '') + this.renderSections(article.content);
         } else {
             // Fallback to legacy content field or simple text
             contentHTML = `<article class="prose prose-lg prose-purple max-w-none mb-12">
@@ -313,6 +319,40 @@ export class ArticleDetailTemplate {
             console.error('Error fetching related articles:', err);
             return DOM.create('div');
         }
+    }
+
+    /**
+     * @description : Parse dan render teks Markdown menjadi HTML aman dengan typography Tailwind
+     * @param {string} markdown - Teks markdown
+     * @returns {string} HTML ter-sanitize
+     * @author : Gemini Agent
+     * @modified : 2026-10-17
+     */
+    renderMarkdownContent(markdown) {
+        if (!markdown) return '';
+
+        let processedMarkdown = markdown;
+
+        // Mendukung custom video embed syntax @[video](url)
+        processedMarkdown = processedMarkdown.replace(/@\[video\]\((https?:\/\/[^\s)]+)\)/g, (match, url) => {
+            return `\n\n${this.generateVideoHTML(url, '')}\n\n`;
+        });
+
+        let rawHtml = '';
+        if (typeof window !== 'undefined' && window.marked) {
+            rawHtml = window.marked.parse(processedMarkdown);
+        } else {
+            rawHtml = processedMarkdown.replace(/\n/g, '<br>');
+        }
+
+        if (typeof window !== 'undefined' && window.DOMPurify) {
+            rawHtml = window.DOMPurify.sanitize(rawHtml, {
+                ADD_TAGS: ['iframe', 'video', 'source'],
+                ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'controls', 'src', 'type', 'target', 'rel']
+            });
+        }
+
+        return `<article class="prose prose-lg prose-purple max-w-none mb-12 text-gray-800 leading-relaxed">${rawHtml}</article>`;
     }
 
     /**
