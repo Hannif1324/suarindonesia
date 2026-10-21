@@ -1,0 +1,59 @@
+# [AGENT-GENERATED]
+# Description : Git Ignore rules untuk SuaR Indonesia Web Platform
+# Created     : 2026-10-21
+# Modified    : 2026-10-21
+# Part of     : Project Configuration
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.env
+*.local
+
+# Node & Package Managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor & IDEs
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# AI Agents & Temporary Local Logs
+.agents/
+.gemini/
+scratch/
+temp/
+tmp/
+*.tmp
+*.temp
+*.log
+
+# Build & Cache Outputs
+dist/
+build/
+out/
+.cache/
