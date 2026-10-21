@@ -189,7 +189,7 @@ export class ArticleEditor {
                                             ${article.date || '-'}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                            <a href="#/artikel/${article.slug}" target="_blank" class="text-gray-400 hover:text-indigo-600 inline-block p-1" title="Lihat di Web">
+                                            <a href="/#/artikel/${article.slug}" target="_blank" class="text-gray-400 hover:text-indigo-600 inline-block p-1" title="Lihat di Web">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                                             </a>
                                             <button class="text-indigo-600 hover:text-indigo-900 font-semibold edit-btn px-2.5 py-1 rounded-lg hover:bg-indigo-50" data-id="${article.id}">
@@ -346,6 +346,7 @@ export class ArticleEditor {
                             <div class="h-4 w-px bg-gray-200 mx-1"></div>
                             <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="link" title="Tautan Link">${icon('link', 'w-4 h-4 text-gray-600')}</button>
                             <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="image" title="Sisipkan Gambar">${icon('camera', 'w-4 h-4 text-gray-600')}</button>
+                            <input type="file" id="toolbar-image-file-input" accept="image/*" class="hidden">
                             <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="video" title="Sisipkan Video Embed">${icon('video', 'w-4 h-4 text-gray-600')}</button>
                             <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100" data-action="hr" title="Garis Pembatas">—</button>
                             <button type="button" class="toolbar-btn p-1.5 rounded hover:bg-gray-100 text-xs font-mono" data-action="dateline" title="Dateline Berita (KEDIRI, SuaR —)">${icon('pin', 'w-4 h-4 text-gray-600')}</button>
@@ -710,7 +711,7 @@ export class ArticleEditor {
         container.querySelectorAll('.toolbar-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const action = e.currentTarget.dataset.action;
-                this.applyToolbarAction(action, markdownTextarea);
+                this.applyToolbarAction(action, markdownTextarea, container);
                 updateStats();
             });
         });
@@ -930,7 +931,7 @@ export class ArticleEditor {
      * @author : Gemini Agent
      * @modified : 2026-10-17
      */
-    applyToolbarAction(action, textarea) {
+    applyToolbarAction(action, textarea, container = null) {
         if (!textarea) return;
 
         const start = textarea.selectionStart;
@@ -983,9 +984,47 @@ export class ArticleEditor {
                 cursorOffset = replacement.length - 1;
                 break;
             case 'image':
-                const promptUrl = prompt('Masukkan URL Gambar (atau unggah via sidebar):', 'https://');
-                if (promptUrl) {
-                    replacement = `\n![${selected || 'Keterangan foto'}](${promptUrl})\n*Keterangan foto dokumentasi*\n`;
+                const choice = confirm('Ingin mengunggah file foto langsung dari komputer/HP?\n\n• Klik OK untuk memilih file foto\n• Klik Batal jika ingin memasukkan URL tautan foto');
+                if (choice) {
+                    let fileInput = container ? container.querySelector('#toolbar-image-file-input') : null;
+                    if (!fileInput) {
+                        fileInput = document.createElement('input');
+                        fileInput.type = 'file';
+                        fileInput.accept = 'image/*';
+                        fileInput.className = 'hidden';
+                        document.body.appendChild(fileInput);
+                    }
+                    fileInput.value = '';
+                    fileInput.onchange = async () => {
+                        const file = fileInput.files?.[0];
+                        if (!file) return;
+
+                        const uploadPlaceholder = `\n![Mengunggah foto: ${file.name}...]()\n`;
+                        const curPos = textarea.selectionStart;
+                        textarea.value = textarea.value.substring(0, curPos) + uploadPlaceholder + textarea.value.substring(curPos);
+                        if (container) this.updateLivePreview(container);
+
+                        try {
+                            const publicUrl = await this.imageUploader.upload(file);
+                            const imgName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+                            const caption = selected || imgName || 'Keterangan foto';
+                            const finalMarkdown = `\n![${caption}](${publicUrl})\n*Keterangan foto dokumentasi*\n`;
+                            
+                            textarea.value = textarea.value.replace(uploadPlaceholder, finalMarkdown);
+                            if (container) this.updateLivePreview(container);
+                        } catch (err) {
+                            alert('Gagal mengunggah gambar: ' + (err.message || err));
+                            textarea.value = textarea.value.replace(uploadPlaceholder, '');
+                            if (container) this.updateLivePreview(container);
+                        }
+                    };
+                    fileInput.click();
+                    return;
+                } else {
+                    const promptUrl = prompt('Masukkan URL Gambar:', 'https://');
+                    if (promptUrl && promptUrl !== 'https://') {
+                        replacement = `\n![${selected || 'Keterangan foto'}](${promptUrl})\n*Keterangan foto dokumentasi*\n`;
+                    }
                 }
                 break;
             case 'video':

@@ -132,10 +132,27 @@ export class ArticleDetailTemplate {
             </div>
         ` : '';
 
+        // Deteksi Cerdas: Apakah konten disimpan sebagai naskah Markdown di dalam array content
+        const isSingleMarkdownSection = Array.isArray(article.content) &&
+            article.content.length === 1 &&
+            article.content[0]?.type === 'paragraph' &&
+            typeof article.content[0]?.content === 'string' &&
+            (
+                article.content[0].content.includes('\n') ||
+                article.content[0].content.includes('#') ||
+                article.content[0].content.includes('![') ||
+                article.content[0].content.includes('**')
+            );
+
         if (article.content_markdown) {
             contentHTML = leadHTML + this.renderMarkdownContent(article.content_markdown);
+        } else if (isSingleMarkdownSection) {
+            // Smart Fallback: Parsing Markdown dari JSONB single paragraph (Solusi artikel production)
+            contentHTML = leadHTML + this.renderMarkdownContent(article.content[0].content);
         } else if (Array.isArray(article.content)) {
             contentHTML = (article.excerpt ? leadHTML : '') + this.renderSections(article.content);
+        } else if (typeof article.content === 'string' && (article.content.includes('#') || article.content.includes('!['))) {
+            contentHTML = leadHTML + this.renderMarkdownContent(article.content);
         } else {
             // Fallback to legacy content field or simple text
             contentHTML = `<article class="prose prose-lg prose-purple max-w-none mb-12">
@@ -301,7 +318,7 @@ export class ArticleDetailTemplate {
                     
                     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
                         ${related.map(article => `
-                            <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer" onclick="window.location.href='#/artikel/${article.slug}'">
+                            <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer" onclick="window.location.href='/#/artikel/${article.slug}'">
                                 <div class="h-40 overflow-hidden">
                                     <img src="${article.image}" alt="${article.title}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
                                 </div>
@@ -342,6 +359,12 @@ export class ArticleDetailTemplate {
 
         let rawHtml = '';
         if (typeof window !== 'undefined' && window.marked) {
+            if (typeof window.marked.setOptions === 'function') {
+                window.marked.setOptions({
+                    breaks: true,
+                    gfm: true
+                });
+            }
             rawHtml = window.marked.parse(processedMarkdown);
         } else {
             rawHtml = processedMarkdown.replace(/\n/g, '<br>');
@@ -349,8 +372,8 @@ export class ArticleDetailTemplate {
 
         if (typeof window !== 'undefined' && window.DOMPurify) {
             rawHtml = window.DOMPurify.sanitize(rawHtml, {
-                ADD_TAGS: ['iframe', 'video', 'source'],
-                ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'controls', 'src', 'type', 'target', 'rel']
+                ADD_TAGS: ['iframe', 'video', 'source', 'figure', 'figcaption'],
+                ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'controls', 'src', 'type', 'target', 'rel', 'class', 'alt']
             });
         }
 
@@ -367,7 +390,11 @@ export class ArticleDetailTemplate {
             switch (section.type) {
                 case 'paragraph':
                     const leadClass = section.lead ? 'text-xl text-gray-700 font-medium mb-6' : '';
-                    html += `<p class="${leadClass}">${section.content}</p>`;
+                    if (typeof section.content === 'string' && (section.content.includes('![') || section.content.includes('#') || section.content.includes('\n\n'))) {
+                        html += this.renderMarkdownContent(section.content);
+                    } else {
+                        html += `<p class="${leadClass}">${section.content}</p>`;
+                    }
                     break;
 
                 case 'heading':
