@@ -18,6 +18,8 @@ Catatan logis dan kronologis rekayasa fitur serta pembaruan arsitektur sistem Su
 | 003 | 2026-10-18 | Remediasi Keamanan Komprehensif (Strix Security Audit) | Selesai | [log-003-security-remediation.md](./log-003-security-remediation.md) |
 | 004 | 2026-10-18 | Arsitektur 2-Layer Hero Background & Zero Blank Lag | Selesai | [log-004-two-layer-hero-architecture.md](./log-004-two-layer-hero-architecture.md) |
 | 005 | 2026-10-19 | Icon Design System & Eliminasi Emoji UI (UI/UX Pro Max) | Selesai | [log-005-icon-design-system.md](./log-005-icon-design-system.md) |
+| 006 | 2026-10-21 | Perbaikan Render Markdown Detail Publik & Upload Foto Naskah | Selesai | [log-006-article-markdown-rendering-fix.md](./log-006-article-markdown-rendering-fix.md) |
+| 007 | 2026-10-21 | Perbaikan Root SPA Hash Routing & Self-Healing Sanitization (Nginx 404) | Selesai | [log-007-spa-routing-navigation-fix.md](./log-007-spa-routing-navigation-fix.md) |
 
 ## 🔗 Referensi Terkait
 - Kembali ke [Beranda Dokumentasi](../index.md)

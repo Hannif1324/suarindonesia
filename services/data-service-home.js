@@ -173,7 +173,7 @@ export async function fetchHomeData() {
                 date: a.date,
                 readTime: a.read_time || '3 min read',
                 image: a.image,
-                link: `#/artikel/${a.slug}`
+                link: `/#/artikel/${a.slug}`
             }));
         }
 

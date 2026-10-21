@@ -137,9 +137,17 @@ class Router {
             const href = link.getAttribute('href');
 
             if (href && href !== '#') {
-                // Check for Hash Route (starts with #/)
-                if (href.startsWith('#/')) {
-                    window.location.hash = href;
+                // Check for Hash Route (starts with #/ or /#/)
+                if (href.startsWith('#/') || href.startsWith('/#/')) {
+                    const cleanHash = href.startsWith('/#/') ? href.substring(1) : href;
+                    // Reset pathname ke root (/) di browser history untuk cegah 404 Nginx saat reload
+                    if (window.location.pathname !== '/' && window.location.pathname !== '') {
+                        window.history.pushState({}, '', '/' + cleanHash);
+                    } else {
+                        window.location.hash = cleanHash;
+                    }
+                    const route = cleanHash.substring(1);
+                    this.loadRoute(route);
                     return;
                 }
 
@@ -220,6 +228,11 @@ class Router {
         // Only treat as hash route if it starts with #/ (e.g. #/artikel/slug)
         // This prevents treating anchor links (e.g. #section) as routes
         if (window.location.hash && window.location.hash.startsWith('#/')) {
+            // Self-healing: bersihkan dirty pathname (misal /berita#/artikel/slug) ke root /
+            // agar request refresh browser selalu ke / (200 OK) dan tidak kena Nginx 404
+            if (window.location.pathname !== '/' && window.location.pathname !== '') {
+                window.history.replaceState({}, '', '/' + window.location.hash);
+            }
             // Hash routing (e.g., #/artikel/slug)
             const route = window.location.hash.substring(1);
             this.loadRoute(route);

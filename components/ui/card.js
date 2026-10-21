@@ -36,7 +36,7 @@ export class Card {
                     ${excerpt}
                 </p>
                 <a 
-                    href="#/artikel/${article.slug}" 
+                    href="/#/artikel/${article.slug}" 
                     class="text-primary hover:text-secondary font-semibold text-sm inline-flex items-center"
                     data-link
                 >

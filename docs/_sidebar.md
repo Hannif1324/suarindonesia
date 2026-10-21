@@ -20,6 +20,8 @@ Part of     : Documentation Engine
   * [Log 003: Remediasi Keamanan Strix](logs/log-003-security-remediation.md)
   * [Log 004: Arsitektur 2-Layer Hero Background](logs/log-004-two-layer-hero-architecture.md)
   * [Log 005: Icon Design System UI/UX](logs/log-005-icon-design-system.md)
+  * [Log 006: Render Markdown Publik & Upload Foto Naskah](logs/log-006-article-markdown-rendering-fix.md)
+  * [Log 007: Root Hash Routing & Self-Healing Sanitization (Nginx 404)](logs/log-007-spa-routing-navigation-fix.md)
 
 * **Keamanan & Kepatuhan**
   * [Strix Security Audit Report](../strix-audit-suarindonesia/SECURITY_AUDIT_REPORT.md)

@@ -299,8 +299,8 @@ export class BeritaPage {
             const cardEl = e.target.closest('[data-slug]');
             if (cardEl) {
                 const slug = cardEl.dataset.slug;
-                const baseUrl = window.location.origin + window.location.pathname;
-                window.location.href = `${baseUrl}#/artikel/${slug}`;
+                // Gunakan root hash route agar kebal Nginx 404 saat di-refresh
+                window.location.href = `/#/artikel/${slug}`;
             }
         });
     }
